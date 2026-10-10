@@ -1,0 +1,102 @@
+---
+const { title, heading = true } = Astro.props;
+const path = Astro.url.pathname;
+const tabs = [
+  { href: "/", label: "Home" },
+  { href: "/interests/", label: "Interests" },
+  { href: "/academics/", label: "Academics" },
+  { href: "/contact/", label: "Contact Me", corner: true },
+];
+const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href));
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <nav>
+        {tabs.map((t) => (
+          <a href={t.href} class:list={{ corner: t.corner }} aria-current={isActive(t.href) ? "page" : undefined}>{t.label}</a>
+        ))}
+      </nav>
+    </header>
+    <main>
+      {heading && <h1>{title}</h1>}
+      <slot />
+    </main>
+  </body>
+</html>
+
+<style is:global>
+  /* Ink wash: cream paper, grey ink, pale wash, slate-blue accent */
+  :root {
+    --paper: #fffff0;
+    --ink: #4a4a4a;
+    --wash: #cbcbcb;
+    --accent: #6d8196;
+    --bar-h: 62px; /* top bar height, border included; pages pin content under it */
+  }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, "Noto Serif", serif;
+  }
+  main {
+    padding: 2rem 1rem;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+  a { color: var(--ink); }
+</style>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-sizing: border-box;
+    height: var(--bar-h);
+    background: var(--paper);
+    /* brush-stroke bottom edge: ink fading out at both ends */
+    border-bottom: 2px solid;
+    border-image: linear-gradient(90deg, transparent, var(--wash) 15%, var(--ink) 50%, var(--wash) 85%, transparent) 1;
+  }
+  nav {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 1rem;
+  }
+  nav a {
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover,
+  nav a:focus-visible {
+    color: var(--ink);
+    border-bottom-color: var(--wash);
+  }
+  nav a[aria-current="page"] {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+  /* pinned to the bar's right corner; the centred tabs stay centred */
+  nav a.corner {
+    position: absolute;
+    right: 1.5rem;
+  }
+  /* too narrow for a corner: it joins the centred row instead */
+  @media (max-width: 40rem) {
+    nav { gap: 1.25rem; }
+    nav a.corner { position: static; }
+  }
+</style>

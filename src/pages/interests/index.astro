@@ -1,0 +1,634 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import quotesTxt from "../../data/quotes.txt?raw";
+import { getStandings } from '../../lib/tetrio';
+
+// Each interest has its own palette: bg = section background, fg = text, hi = accent.
+const interests = [
+  { id: "reading", title: "Reading", bg: "#f3e9d2", fg: "#3e2c1c", hi: "#8b4a1f" },
+  // Tetris colours taken from TETR.IO's own stylesheet: dark plum background, hot-pink highlight
+  { id: "tetris", title: "Tetris", bg: "#16101e", fg: "#ece6f7", hi: "#ff499b" },
+  { id: "poker", title: "Poker", bg: "#0e4a2e", fg: "#f6f0dc", hi: "#e0b84c" },
+  { id: "piano", title: "Piano", bg: "#141414", fg: "#fffff0", hi: "#c9a94a" },
+  { id: "quotes", title: "Quotes", bg: "#e9e6df", fg: "#2b2b2b", hi: "#9b2d24" },
+];
+const numerals = ["I", "II", "III", "IV", "V"];
+
+// Paragraphs shown one per scroll step on the right of a scene. A scene with N paragraphs gets
+// N screens of scrolling; scenes without any get one.
+const prose: Record<string, string[]> = {
+  reading: [
+    "Here are some of the books in which I have found insight and resonance. What follows are valuable lessons I have drawn from " +
+      "reading them.",
+    "Reading is an active process: a synthesis of understanding the author's intentions and forming your own.",
+    "Reading should begin with a purpose, such as a question. Read only the parts of a book that serve it; good reading is " +
+      "therefore non-linear.",
+    "Great readers are great students. They approach books with a humility that lets them grasp exactly what the author means to " +
+      "communicate.",
+  ],
+  poker: [
+    "Poker combines mathematical probability with human psychology. In 2025–26 I have mostly played cash games, at blinds ranging from " +
+      "5c/10c to $5/$10.",
+    "What fascinates me most is the interplay of GTO (Game Theory Optimal) and exploitative play. GTO is a mathematically " +
+      "unexploitable strategy; exploitative play targets opponents' tendencies and tells.",
+    "At the highest level, poker lets the most rigorous mathematics meet the sharpest reads of human opponents, creating a " +
+      "levelling battle of endless intricacy.",
+    "I've learned a great deal from hand breakdowns by Phil Galfond, Doug Polk and Daniel Negreanu. Though my skill pales next to " +
+      "theirs, I've won an average of 193 big blinds per 100 hands.",
+    "I mostly play No Limit Texas Hold'em, but have dabbled in Pot Limit Omaha and Heads Up. I'm always keen to take on new " +
+      "opponents and, to quote the great Andrew Robl, dance.",
+  ],
+};
+
+// Piano pieces in progress, each linked to a performance by Daniel Barenboim.
+const pieces = [
+  { title: "Appassionata", detail: "Beethoven · 3rd movement", url: "https://www.youtube.com/watch?v=LqIKv-42v1E" },
+  { title: "Sonata Pathétique", detail: "Beethoven · 1st movement", url: "https://www.youtube.com/watch?v=f457tJ7uvlE" },
+  { title: "Moonlight Sonata", detail: "Beethoven · 3rd movement", url: "https://www.youtube.com/watch?v=WKAbSu6-6Bc" },
+  { title: "Lento con gran espressione", detail: "Chopin · Nocturne in C♯ minor", url: "https://www.youtube.com/watch?v=-4quKyrOVww" },
+];
+
+// Books for the Reading scene. Covers live in public/covers/<slug>.jpg; w/h are the image's
+// pixel size, so each cover's width is known before it loads and the loop length can be computed.
+const books = [
+  { slug: "sapiens", title: "Sapiens: A Brief History of Humankind", author: "Yuval Noah Harari", w: 326, h: 500 },
+  { slug: "8020", title: "The 80/20 Principle", author: "Richard Koch", w: 311, h: 500 },
+  { slug: "elon-musk", title: "Elon Musk", author: "Walter Isaacson", w: 327, h: 499 },
+  { slug: "psychology-of-money", title: "The Psychology of Money", author: "Morgan Housel", w: 319, h: 500 },
+  { slug: "how-to-read-a-book", title: "How to Read a Book", author: "Mortimer J. Adler & Charles Van Doren", w: 304, h: 475 },
+  { slug: "sales-bible", title: "The Sales Bible", author: "Jeffrey Gitomer", w: 324, h: 500 },
+  { slug: "power-and-impact", title: "Power + Impact", author: "Harvard Business Review", w: 362, h: 500 },
+  { slug: "wealth-of-nations", title: "The Wealth of Nations", author: "Adam Smith", w: 333, h: 500 },
+  { slug: "steve-jobs", title: "Steve Jobs", author: "Walter Isaacson", w: 347, h: 500 },
+  { slug: "stolen-focus", title: "Stolen Focus", author: "Johann Hari", w: 298, h: 450 },
+  { slug: "speed-of-trust", title: "The Speed of Trust", author: "Stephen M. R. Covey", w: 451, h: 500 },
+  { slug: "fall-in-love", title: "How to Make Anyone Fall in Love with You", author: "Leil Lowndes", w: 313, h: 475 },
+  { slug: "power-genes", title: "Power Genes", author: "Maggie Craddock", w: 349, h: 500 },
+  { slug: "super-system", title: "Doyle Brunson's Super System", author: "Doyle Brunson", w: 333, h: 500 },
+  { slug: "reading-minds", title: "The Art of Reading Minds", author: "Henrik Fexeus", w: 261, h: 400 },
+  {
+    slug: "critical-thinking",
+    title: "Critical Thinking: Tools for Taking Charge of Your Learning and Your Life",
+    author: "Richard Paul & Linda Elder",
+    w: 358,
+    h: 475,
+  },
+  { slug: "nvidia-way", title: "The Nvidia Way", author: "Tae Kim", w: 329, h: 500 },
+  { slug: "mars-venus", title: "Men Are from Mars, Women Are from Venus", author: "John Gray", w: 323, h: 500 },
+  { slug: "win-friends", title: "How to Win Friends and Influence People", author: "Dale Carnegie", w: 316, h: 475 },
+  { slug: "flipped", title: "Flipped", author: "Wendelin Van Draanen", w: 320, h: 500 },
+  { slug: "beneath-the-cards", title: "Beneath the Cards", author: "Garrett Adelstein", w: 400, h: 600 },
+  { slug: "crime-and-punishment", title: "Crime and Punishment", author: "Fyodor Dostoevsky", w: 289, h: 423 },
+  { slug: "1984", title: "1984", author: "George Orwell", w: 323, h: 500 },
+  { slug: "influence-and-persuasion", title: "Influence + Persuasion", author: "Harvard Business Review", w: 292, h: 500 },
+];
+// Covers are 12rem tall with a 1.75rem gap, drifting at a steady 24px/s.
+const COVER_H = 12, GAP = 1.75, SPEED = 24;
+// Each row is repeated four times and slides by half its length, so one half (two copies) is always
+// wider than even a very wide screen and the loop wraps seamlessly.
+const half = Math.ceil(books.length / 2);
+const rows = [books.slice(0, half), books.slice(half)].map((row) => {
+  const halfRem = 2 * row.reduce((sum, b) => sum + (COVER_H * b.w) / b.h + GAP, 0);
+  return { books: [...row, ...row, ...row, ...row], seconds: ((halfRem * 16) / SPEED).toFixed(1) };
+});
+
+// Tetra League standings: baked in when the site is built, then replaced with live numbers
+// from /api/tetra-standings.json when the page loads (see the script below).
+const standings = await getStandings();
+
+// Poker chip riffle: two stacks of five (left red, right cream) that push together, interleave into
+// one alternating stack, then split again. k = height in its own stack, m = height once merged.
+const chips = Array.from({ length: 10 }, (_, i) => {
+  const left = i < 5, k = i % 5;
+  return { left, k, m: 2 * k + (left ? 0 : 1) };
+});
+// First day of the current daily-quote streak (day 1). Today's day number is counted from it,
+// at build time and again in the viewer's browser so it never goes stale.
+const STREAK_START = "2023-12-09";
+const streakDay = (start: string, now = new Date()) =>
+  Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.parse(start)) / 86_400_000) + 1;
+// Quotes that surface in the background of the Quotes scene. In src/data/quotes.txt a blank line
+// separates quotes, so a long quote can wrap over several lines.
+const quotes = quotesTxt.split(/\n\s*\n/).map((q) => q.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+const streakBlurb =
+  "I post one quote every day on Instagram. I started in 2022 and reached 100-day streaks a few times " +
+  "before deciding to see how far I could go. My current streak began in late 2023.";
+const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
+---
+<Layout title="Interests" heading={false}>
+  <!-- Barlow Condensed: a free stand-in for TETR.IO's condensed DIN-style display font (HUN) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&display=swap" />
+  <div class="story">
+    <!-- Pinned panel: stays on screen while scrolling; the active scene is swapped in -->
+    <div class="panel">
+      {interests.map((item, i) => (
+        <section class:list={["scene", { active: i === 0 }]} style={`--bg: ${item.bg}; --fg: ${item.fg}; --hi: ${item.hi}`}>
+          {item.id === "reading" && (
+            <div class="shelf" aria-hidden="true">
+              {rows.map((row) => (
+                <div class="shelf-row" style={`animation-duration: ${row.seconds}s`}>
+                  {row.books.map((b) => (
+                    <img class="cover" src={`/covers/${b.slug}.jpg`} alt={`${b.title} by ${b.author}`} width={b.w} height={b.h} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+          <p class="numeral">{numerals[i]}</p>
+          <h2 aria-label={item.title}>
+            {[...item.title].map((ch, c) => <span aria-hidden="true" style={`--c: ${c}`}>{ch}</span>)}
+          </h2>
+          {item.id === "poker" && (
+            <div class="chips-wrap" aria-hidden="true">
+              <div class="chips">
+                {chips.map((c) => (
+                  <span
+                    class:list={["chip", c.left ? "chip-red" : "chip-cream"]}
+                    style={`--side: ${c.left ? -1 : 1}; --k: ${c.k}; --m: ${c.m}`}
+                  ></span>
+                ))}
+              </div>
+            </div>
+          )}
+          {prose[item.id] && (
+            <div class="prose side">
+              {prose[item.id].map((text) => <p>{text}</p>)}
+            </div>
+          )}
+          {item.id === "tetris" && (
+            <div class="standings side">
+              <div class="ranks" hidden={!standings}>
+                <p class="standings-intro">Currently ranked</p>
+                <p class="standing"><span class="standing-num" data-field="local">№{standings?.local}</span> <span
+                  class="standing-where">in <span data-field="country">{standings?.country}</span></span></p>
+                <p class="standing"><span class="standing-num" data-field="world">№{standings?.world}</span> <span
+                  class="standing-where">in the world</span></p>
+                <p class="standings-note">TETRA LEAGUE · <span data-field="when">as of {builtOn}</span></p>
+              </div>
+              <p class="standings-invite">
+                Always happy to play a match · <a
+                  href="https://ch.tetr.io/u/_serenity_"
+                  target="_blank"
+                  rel="noopener">My TETRA CHANNEL profile ↗</a>
+              </p>
+            </div>
+          )}
+          {item.id === "piano" && (
+            <div class="pieces side">
+              <p class="pieces-intro">Currently working on</p>
+              <ul>
+                {pieces.map((pc) => (
+                  <li>
+                    <span class="piece-title">{pc.title}</span>
+                    <span class="piece-detail">{pc.detail} · <a href={pc.url} target="_blank" rel="noopener">Barenboim ↗</a></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {item.id === "quotes" && <div class="quote-field" aria-hidden="true" data-quotes={JSON.stringify(quotes)}></div>}
+          {item.id === "quotes" && (
+            <div class="streak side" data-start={STREAK_START}>
+              <p>{streakBlurb}</p>
+              <p class="streak-day">Day <span class="streak-num">{streakDay(STREAK_START)}</span></p>
+            </div>
+          )}
+          <!-- Content for this section goes here -->
+        </section>
+      ))}
+      <!-- Jump menu: skip straight to any interest instead of scrolling through the ones before it -->
+      <nav class="jump" aria-label="Jump to interest">
+        {interests.map((item, i) => (
+          <a href={`#${item.id}`} title={item.title} aria-label={item.title} aria-current={i === 0 ? "true" : undefined}>{numerals[i]}</a>
+        ))}
+      </nav>
+    </div>
+    <!-- One screen-tall scroll marker per scene step; scrolling past them drives the swap.
+         Most scenes have one step; Reading has one per paragraph. -->
+    {interests.flatMap((item, i) =>
+      Array.from({ length: prose[item.id]?.length ?? 1 }, (_, k) => (
+        <div id={k === 0 ? item.id : undefined} class="marker" data-scene={i} data-step={k}></div>
+      ))
+    )}
+  </div>
+</Layout>
+
+<script>
+  // The marker crossing the middle of the viewport picks the scene shown in the panel,
+  // and which of that scene's paragraphs is showing.
+  const markers = [...document.querySelectorAll<HTMLElement>(".marker")];
+  const scenes = [...document.querySelectorAll(".scene")];
+  const jump = document.querySelector<HTMLElement>(".jump")!;
+  const jumpLinks = [...jump.querySelectorAll("a")];
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const { scene, step } = (e.target as HTMLElement).dataset;
+      scenes.forEach((s, j) => s.classList.toggle("active", j === Number(scene)));
+      // the jump menu marks the current interest and takes on its colours
+      jumpLinks.forEach((a, j) => (j === Number(scene) ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+      const colours = getComputedStyle(scenes[Number(scene)]);
+      jump.style.setProperty("--seal", colours.getPropertyValue("--hi"));
+      jump.style.setProperty("--seal-bg", colours.getPropertyValue("--bg"));
+      scenes[Number(scene)].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === Number(step)));
+    }
+  }, { rootMargin: "-50% 0px -50% 0px" });
+  markers.forEach((m) => io.observe(m));
+
+  // Recount the quote streak for today, in case the page was built days ago.
+  const streak = document.querySelector<HTMLElement>(".streak")!;
+  const now = new Date();
+  streak.querySelector(".streak-num")!.textContent = String(
+    Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.parse(streak.dataset.start!)) / 86_400_000) + 1,
+  );
+
+  // Quotes surface one at a time in empty background space, linger, then fade. They only spawn
+  // while the Quotes scene is showing, in a shuffled order so none repeats until all have shown.
+  const field = document.querySelector<HTMLElement>(".quote-field")!;
+  const quotesScene = field.parentElement!;
+  const pool: string[] = JSON.parse(field.dataset.quotes!);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  let nextQuote = 0;
+  const textBox = (el: Element) => {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    return r.getBoundingClientRect();
+  };
+  const overlaps = (a: DOMRect, b: DOMRect, pad = 24) =>
+    a.left - pad < b.right && b.left - pad < a.right && a.top - pad < b.bottom && b.top - pad < a.bottom;
+  const spawnQuote = () => {
+    if (!quotesScene.classList.contains("active") || document.hidden) return;
+    const q = document.createElement("p");
+    q.textContent = pool[nextQuote++ % pool.length];
+    field.append(q);
+    const f = field.getBoundingClientRect(), size = q.getBoundingClientRect();
+    // keep clear of the heading, the streak text, the jump menu and the quotes already showing
+    const taken = [
+      jump.getBoundingClientRect(),
+      ...[...quotesScene.children].filter((el) => el !== field).map(textBox),
+      ...[...field.children].filter((el) => el !== q).map((el) => el.getBoundingClientRect()),
+    ];
+    for (let tries = 0; tries < 30; tries++) {
+      const x = Math.random() * (f.width - size.width), y = Math.random() * (f.height - size.height);
+      if (taken.some((b) => overlaps(new DOMRect(f.left + x, f.top + y, size.width, size.height), b))) continue;
+      q.style.left = `${x}px`;
+      q.style.top = `${y}px`;
+      q.addEventListener("animationend", () => q.remove());
+      return;
+    }
+    q.remove(); // no free space this time; try again on the next tick
+  };
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(spawnQuote, 1800);
+
+  // Swap in live Tetra League standings; if this fails, the numbers from the last build stay.
+  fetch("/api/tetra-standings.json")
+    .then((res) => (res.ok ? res.json() : null))
+    .then((s) => {
+      if (!s) return;
+      const box = document.querySelector<HTMLElement>(".ranks")!;
+      const set = (field: string, text: string) => (box.querySelector(`[data-field="${field}"]`)!.textContent = text);
+      set("local", `№${s.local}`);
+      set("world", `№${s.world}`);
+      set("country", s.country);
+      set("when", "live");
+      box.hidden = false;
+    })
+    .catch(() => {});
+</script>
+
+<style>
+  /* ---- Scrollytelling ---- */
+  .story { margin-top: -2rem; } /* sit flush under the top bar, cancelling main's top padding */
+  /* pinned directly under the top bar from the first frame, filling the rest of the screen */
+  .panel {
+    position: sticky;
+    top: var(--bar-h);
+    height: calc(100svh - var(--bar-h));
+    /* let the markers scroll underneath the pinned panel instead of below it */
+    margin-bottom: calc(var(--bar-h) - 100svh);
+  }
+  .marker { height: 100svh; }
+
+  /* left edge for headings: on wide screens it clears the jump menu */
+  .panel { --gutter: 1rem; }
+  @media (min-width: 64.01rem) { .panel { --gutter: 4.5rem; } }
+
+  /* ---- Jump menu: I–V squares down the left edge ---- */
+  .jump {
+    position: absolute;
+    z-index: 2;
+    left: calc(50% - 50vw + 1rem);
+    top: 50%;
+    translate: 0 -50%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    --seal: var(--accent);
+    --seal-bg: var(--paper);
+  }
+  .jump a {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    box-sizing: border-box;
+    border: 2px solid var(--seal);
+    border-radius: 3px;
+    color: var(--seal);
+    font-size: 0.8rem;
+    font-weight: bold;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    opacity: 0.55;
+    transition: opacity 0.2s, background 0.2s, color 0.2s;
+  }
+  .jump a:hover,
+  .jump a:focus-visible { opacity: 1; }
+  .jump a[aria-current] { opacity: 1; background: var(--seal); color: var(--seal-bg); }
+  /* narrower screens: the left edge belongs to the headings, so the squares sit in a row at the bottom */
+  @media (max-width: 64rem) {
+    .jump {
+      left: 50%;
+      top: auto;
+      bottom: 1rem;
+      translate: -50% 0;
+      flex-direction: row;
+    }
+  }
+
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--fg);
+    /* paint the background edge to edge without widening the page */
+    box-shadow: 0 0 0 100vmax var(--bg);
+    clip-path: inset(0 -100vmax);
+    /* the incoming scene fades in on top; the outgoing one stays solid underneath
+       until the fade finishes, so the page never shows through mid-transition.
+       hidden scenes can't be clicked or tabbed into */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0s 0.6s, visibility 0s 0.6s;
+  }
+  .scene.active {
+    z-index: 1;
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.6s ease;
+  }
+  /* text sits above any scene background decoration */
+  .scene > :not(.shelf, .quote-field) { position: relative; }
+
+  /* ---- Reading: two rows of covers drifting in opposite directions ---- */
+  :global(html) { overflow-x: clip; } /* the full-width shelf must not widen the page */
+  .shelf {
+    position: absolute;
+    inset: 0 auto;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 6vh 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    opacity: 0.4; /* covers stay legible, heading stays dominant */
+  }
+  .shelf-row {
+    display: flex;
+    width: max-content;
+    animation: drift linear infinite; /* duration set per row from its length */
+  }
+  /* top row: left → right; bottom row: right → left */
+  .shelf-row:first-child { animation-direction: reverse; }
+  @keyframes drift { to { transform: translateX(-50%); } }
+  .cover {
+    height: 12rem; /* keep in sync with COVER_H */
+    width: auto;
+    margin-right: 1.75rem; /* keep in sync with GAP; margin, not gap, so the halves line up at exactly -50% */
+    border-radius: 2px 4px 4px 2px;
+    box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ---- Right-hand content beside the heading, mirroring the heading's offset ---- */
+  .scene > .side {
+    position: absolute;
+    top: 50%;
+    right: max(-15vw, calc(1rem + (100% - 100vw) / 2));
+    translate: 0 -50%;
+    width: min(54rem, 100vw - 24rem); /* leave room for the heading on the left */
+  }
+
+  /* ---- Reading text: one paragraph at a time ---- */
+  .prose {
+    display: grid; /* every paragraph shares one cell, so they cross-fade in place */
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+  .prose p {
+    grid-area: 1 / 1;
+    align-self: center;
+    margin: 0;
+    padding: 1rem 1.4rem;
+    border-radius: 4px;
+    /* soft backing so the drifting covers never compete with the text */
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  .prose p.current { opacity: 1; transform: none; }
+  /* ---- Poker: chip riffle shuffle ---- */
+  /* sits under the heading on the left, lined up with it */
+  .chips-wrap {
+    margin-top: 2.5rem;
+    margin-left: max(-15vw, calc(var(--gutter) + (100% - 100vw) / 2));
+  }
+  .chips {
+    --w: 4.5rem;    /* chip width */
+    --h: 0.75rem;   /* chip thickness */
+    --gap: 2.75rem; /* how far each stack sits from the centre: over half a chip, so the stacks don't touch */
+    position: relative;
+    width: calc(var(--w) + 2 * var(--gap));
+    height: calc(11 * var(--h));
+  }
+  .chip {
+    position: absolute;
+    bottom: 0;
+    left: calc(50% - var(--w) / 2);
+    width: var(--w);
+    height: var(--h);
+    border-radius: 3px;
+    z-index: var(--m); /* higher in the merged stack draws on top */
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3), 0 1px 0 rgba(0, 0, 0, 0.35);
+    transform: translate(calc(var(--side) * var(--gap)), calc(var(--k) * var(--h) * -1));
+    animation: riffle 2.6s ease-in-out infinite;
+    animation-delay: calc(var(--m) * 0.03s); /* chips drop in one after another, like a real riffle */
+  }
+  /* edge spots, as on real casino chips */
+  .chip-red { background: repeating-linear-gradient(90deg, #b8282e 0 14%, #f6f0dc 14% 20%); }
+  .chip-cream { background: repeating-linear-gradient(90deg, #efe6cf 0 14%, #b8282e 14% 20%); }
+  @keyframes riffle {
+    0%, 15% { transform: translate(calc(var(--side) * var(--gap)), calc(var(--k) * var(--h) * -1)); }
+    /* stacks tilt their inner edges up and lean in */
+    32% {
+      transform: translate(calc(var(--side) * var(--gap) * 0.45), calc(var(--k) * var(--h) * -1 - 0.4rem))
+        rotate(calc(var(--side) * -14deg));
+    }
+    /* chips fall into one alternating stack */
+    48%, 68% { transform: translate(0, calc(var(--m) * var(--h) * -1)); }
+    /* and split back into two */
+    100% { transform: translate(calc(var(--side) * var(--gap)), calc(var(--k) * var(--h) * -1)); }
+  }
+
+  /* ---- Tetris standings, styled after TETR.IO's league display ---- */
+  .standings {
+    font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    text-align: right;
+  }
+  .standings p { margin: 0; }
+  .standings-intro { font-size: 1.4rem; letter-spacing: 0.08em; opacity: 0.75; }
+  .standing { line-height: 1.05; }
+  .standing-num {
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 10px #fff6; /* a softer take on TETR.IO's glowing white numbers */
+  }
+  .standing-where { margin-left: 0.3em; font-size: clamp(1.4rem, 2.6vw, 2rem); letter-spacing: 0.04em; color: var(--hi); }
+  .standings-note { margin-top: 0.75rem !important; font-size: 1rem; letter-spacing: 0.12em; opacity: 0.55; }
+  .standings-invite { margin-top: 2rem !important; font-size: 1.3rem; letter-spacing: 0.06em; }
+  .standings-invite a { color: var(--hi); text-underline-offset: 0.2em; }
+  .standings-invite a:hover { text-shadow: 0 0 10px color-mix(in srgb, var(--hi) 60%, transparent); }
+
+  /* ---- Piano: pieces in progress ---- */
+  .pieces { font-size: 1.15rem; }
+  .pieces-intro { margin: 0 0 1rem; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem; color: var(--hi); }
+  .pieces ul { list-style: none; margin: 0; padding: 0; }
+  .pieces li {
+    display: flex;
+    flex-direction: column;
+    padding: 0.9rem 0;
+    border-top: 1px solid color-mix(in srgb, var(--hi) 35%, transparent);
+  }
+  .pieces li:last-child { border-bottom: 1px solid color-mix(in srgb, var(--hi) 35%, transparent); }
+  .piece-title { font-size: clamp(1.4rem, 2.6vw, 2rem); font-style: italic; }
+  .piece-detail { margin-top: 0.2rem; opacity: 0.75; }
+  .pieces a { color: var(--hi); text-underline-offset: 0.2em; }
+
+  /* ---- Quotes: past posts surfacing in the background ---- */
+  .quote-field {
+    position: absolute;
+    inset: 0 auto;
+    left: calc(50% - 50vw);
+    width: 100vw;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .quote-field :global(p) { /* added by the script, so outside Astro's scoped styles */
+    position: absolute;
+    margin: 0;
+    max-width: min(22rem, 75vw);
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    opacity: 0;
+    animation: quoteLife 9s ease-in-out forwards;
+  }
+  @keyframes quoteLife {
+    0% { opacity: 0; transform: scale(0.9); filter: blur(6px); }
+    15% { opacity: 0.5; transform: none; filter: none; }
+    65% { opacity: 0.5; transform: none; }
+    100% { opacity: 0; transform: translateY(-0.75rem); }
+  }
+
+  /* ---- Quotes: daily streak ---- */
+  .streak { font-size: 1.15rem; line-height: 1.6; max-width: 38rem; margin-left: auto; }
+  .streak p { margin: 0; }
+  .streak-day { margin-top: 1.5rem !important; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hi); }
+  .streak-num {
+    display: block;
+    font-size: clamp(4rem, 10vw, 7.5rem);
+    line-height: 1;
+    letter-spacing: 0;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  /* narrower screens: no room beside the heading, so the right-hand content sits under it */
+  @media (max-width: 64rem) {
+    .scene > .side {
+      position: relative;
+      top: auto;
+      right: auto;
+      translate: none;
+      width: auto;
+      margin-top: 1rem;
+      margin-inline: max(-15vw, calc(1rem + (100% - 100vw) / 2));
+    }
+    .standings { text-align: left; }
+    .chips-wrap { display: none; } /* no room once the text sits under the heading */
+  }
+  @media (max-width: 40rem) {
+    .prose { font-size: 0.95rem; line-height: 1.5; }
+    .prose p { padding: 0.7rem 0.9rem; }
+    /* smaller covers leave room between the two rows for the heading and text */
+    .cover { height: 7rem; }
+    .shelf { padding: 2vh 0; }
+  }
+
+  /* headings sit 15% of the screen left of the text column, but never past a 1rem page gutter */
+  .numeral, .scene h2 { margin-left: max(-15vw, calc(var(--gutter) + (100% - 100vw) / 2)); }
+  .numeral {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    letter-spacing: 0.15em;
+    color: var(--fg);
+  }
+  .scene h2 {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: 2.5rem;
+    letter-spacing: 0.06em;
+    color: var(--hi);
+  }
+
+  /* Typewriter: each time a scene becomes active its heading is typed out letter by letter.
+     Letters stay hidden until their turn, a cursor sits after the newest letter,
+     and the last letter keeps a blinking cursor. Inactive scenes keep their text, so a
+     scene fading out underneath doesn't blank. */
+  .scene h2 span { --d: calc(0.2s + var(--c) * 0.09s); }
+  .scene.active h2 span {
+    animation: unTyped var(--d) steps(1), cursor 0.09s steps(1) var(--d);
+  }
+  .scene.active h2 span:last-child {
+    animation: unTyped var(--d) steps(1), blink 1s steps(1) var(--d) infinite;
+  }
+  @keyframes unTyped { from, to { visibility: hidden; } }
+  @keyframes cursor { from, to { box-shadow: 0.08em 0 0 var(--hi); } }
+  @keyframes blink {
+    0% { box-shadow: 0.08em 0 0 var(--hi); }
+    50% { box-shadow: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip { animation: none; }
+    .prose p { transition: none; }
+    .shelf-row { animation: none; }
+    .scene.active h2 span,
+    .scene.active h2 span:last-child { animation: none; }
+  }
+</style>
