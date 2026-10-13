@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "check": "! grep -rnE '^.{141,}' src astro.config.mjs --exclude=quotes.txt"
   },
   "dependencies": {
     "@astrojs/vercel": "^11.0.13",
