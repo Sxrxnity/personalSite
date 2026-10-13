@@ -417,7 +417,7 @@ const definitions = [
   article { display: none; }
   article:is(:target, :has(:target)) { display: block; }
   .academics:has(article:target, article :target) :is(.cards, .definitions) { display: none; }
-  article, article section { scroll-margin-top: var(--bar-h); }
+  article, article section { scroll-margin-top: calc(var(--bar-h) + 1.5rem); }
 
   /* a line above each section separates it from the intro and from the section before */
   article section {
