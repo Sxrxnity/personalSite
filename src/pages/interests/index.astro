@@ -116,10 +116,6 @@ const streakBlurb =
 const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" });
 ---
 <Layout title="Interests" heading={false}>
-  <!-- Barlow Condensed: a free stand-in for TETR.IO's condensed DIN-style display font (HUN) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&display=swap" />
   <div class="story">
     <!-- Pinned panel: stays on screen while scrolling; the active scene is swapped in -->
     <div class="panel">
@@ -273,8 +269,11 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       ...[...quotesScene.children].filter((el) => el !== field).map(textBox),
       ...[...field.children].filter((el) => el !== q).map((el) => el.getBoundingClientRect()),
     ];
+    // keep a gutter from every edge; 100vw includes the scrollbar, so measure to the visible edge
+    const gutter = 24, right = Math.min(f.right, document.documentElement.clientWidth);
     for (let tries = 0; tries < 30; tries++) {
-      const x = Math.random() * (f.width - size.width), y = Math.random() * (f.height - size.height);
+      const x = gutter + Math.random() * (right - f.left - size.width - 2 * gutter),
+        y = gutter + Math.random() * (f.height - size.height - 2 * gutter);
       if (taken.some((b) => overlaps(new DOMRect(f.left + x, f.top + y, size.width, size.height), b))) continue;
       q.style.left = `${x}px`;
       q.style.top = `${y}px`;
@@ -490,6 +489,21 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
     100% { transform: translate(calc(var(--side) * var(--gap)), calc(var(--k) * var(--h) * -1)); }
   }
 
+  /* Barlow Condensed, a free stand-in for TETR.IO's display font (HUN). SIL Open Font License
+     (public/fonts/barlow-condensed-OFL.txt); served from
+     this site rather than Google Fonts so it arrives as quickly as the page itself */
+  @font-face {
+    font-family: "Barlow Condensed";
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/barlow-condensed-500.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Barlow Condensed";
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
+  }
   /* ---- Tetris standings, styled after TETR.IO's league display ---- */
   .standings {
     font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
