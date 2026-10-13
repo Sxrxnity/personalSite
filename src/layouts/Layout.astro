@@ -4,7 +4,7 @@ const path = Astro.url.pathname;
 const tabs = [
   { href: "/", label: "Home" },
   { href: "/interests/", label: "Interests" },
-  { href: "/academics/", label: "Academics" },
+  { href: "/academics/", label: "Articles" },
   { href: "/contact/", label: "Contact Me", corner: true },
 ];
 const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href));

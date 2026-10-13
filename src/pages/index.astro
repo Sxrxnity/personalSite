@@ -1,4 +1,247 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+// "Hi!" cycles through these; the first is what shows before the script runs.
+const hellos = ["Hi!", "Hola!", "Bonjour!", "Ciao!", "Hallo!", "Olá!", "Hej!", "Привет!", "Γεια σου!",
+  "नमस्ते!", "こんにちは!", "你好!", "안녕하세요!", "Xin chào!", "Merhaba!"];
+
+// Fill the blank in "I'm currently ___", one per pass of the network; the first shows on load.
+// Each has its own output neuron.
+const doings = ["working on LeetCode problems", "climbing the Tetra League", "practising piano",
+  "reading a good book", "writing today's quote"];
+
+// The network under the name: neurons per layer, input on the left, output on the right.
+const layers = [4, 6, 6, 6, doings.length];
+const W = 640, H = 240, pad = 30, gap = 36, right = 40; // right = room for the output odds
+const nodes = layers.map((n, l) => Array.from({ length: n }, (_, i) => ({
+  x: pad + (l * (W - right - 2 * pad)) / (layers.length - 1),
+  y: H / 2 + (i - (n - 1) / 2) * gap,
+})));
+const edges = nodes.slice(1).flatMap((to, l) =>
+  nodes[l].flatMap((a, i) => to.map((b, j) => ({ id: `${l}-${i}-${j}`, a, b }))));
 ---
-<Layout title="Home"></Layout>
+<Layout title="Home" heading={false}>
+  <h1 aria-label="Hi!">
+    <span class="hello" aria-hidden="true" data-hellos={JSON.stringify(hellos)}>{hellos[0]}</span>
+  </h1>
+  <p class="name">
+    {doings.map((d) => <span class="ghost">My name's Danny, and I'm currently {d}.</span>)}
+    <span>My name's Danny, and I'm currently <span class="doing">{doings[0]}</span>.</span>
+  </p>
+  <svg class="net" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"
+    data-layers={JSON.stringify(layers)} data-doings={JSON.stringify(doings)}>
+    {edges.map((e) => <line class="edge" data-edge={e.id} x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y} />)}
+    {edges.map((e) => <line class="pulse" data-edge={e.id} pathLength="1"
+      x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y} />)}
+    {nodes.map((layer, l) => layer.map((n, i) => <circle class="node" data-node={`${l}-${i}`} cx={n.x} cy={n.y} r="7"
+      style={`animation-delay: -${(Math.random() * 3).toFixed(2)}s`} />))}
+    {nodes.at(-1)!.map((n) => <text class="prob" x={n.x + 14} y={n.y} dominant-baseline="central" />)}
+  </svg>
+  <p class="intro">
+    I am currently a 2nd year student studying Advanced Computer Science at UNSW. Rather than me telling you who
+    I am, I think you'll get to know me much better by just looking around this site! If there's any discipline
+    that you wish to discuss in greater depth, or improvements you think the site could use, please{" "}
+    <a href="/contact/">get in touch</a>!
+  </p>
+</Layout>
+
+<script>
+  const hello = document.querySelector<HTMLElement>(".hello")!;
+  const hellos: string[] = JSON.parse(hello.dataset.hellos!);
+  let i = 0;
+  // Other scripts come from fallback fonts that draw taller (Hindi, Chinese, Korean...), so scale each
+  // greeting until it stands as tall above the baseline as "Hi!".
+  const ctx = document.createElement("canvas").getContext("2d")!;
+  ctx.font = getComputedStyle(hello).font;
+  const ascent = (text: string) => ctx.measureText(text).actualBoundingBoxAscent;
+  const base = ascent(hellos[0]);
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setInterval(() => {
+      hello.classList.add("out");
+      setTimeout(() => {
+        hello.textContent = hellos[++i % hellos.length];
+        hello.style.fontSize = `${base / ascent(hello.textContent)}em`;
+        hello.classList.remove("out");
+      }, 300); // matches the transition below
+    }, 2000);
+  }
+
+  // Each pass: a signal runs forward through the network, one output neuron wins,
+  // and its answer streams into the blank a letter at a time.
+  const net = document.querySelector<SVGSVGElement>(".net")!;
+  const doing = document.querySelector<HTMLElement>(".doing")!;
+  const layers: number[] = JSON.parse(net.dataset.layers!);
+  const doings: string[] = JSON.parse(net.dataset.doings!);
+  const last = layers.length - 1;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const STEP = 450; // ms for a signal to cross one layer
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const sample = (n: number, k: number) => [...Array(n).keys()].sort(() => Math.random() - 0.5).slice(0, k);
+  const $ = (selector: string) => net.querySelector<SVGElement>(selector)!;
+  const node = (id: string) => $(`.node[data-node="${id}"]`) as SVGCircleElement;
+  const fire = (l: number, i: number) => node(`${l}-${i}`).animate(
+    [{ fill: accent, transform: "scale(1.6)", opacity: 1, offset: 0 }], { duration: 1200, easing: "ease-out" });
+  // a dash of light along an edge (see .pulse); a real signal also leaves the edge glowing for a moment,
+  // while faint ones are just background chatter
+  const pulse = (id: string, faint = false) => {
+    const opacity = faint ? 0.3 : 1;
+    $(`.pulse[data-edge="${id}"]`).animate([{ strokeDashoffset: 0.2, opacity }, { strokeDashoffset: -1, opacity }],
+      faint ? { duration: 1100 } : { duration: STEP, easing: "ease-in" });
+    if (!faint) $(`.edge[data-edge="${id}"]`).animate([{ stroke: accent, opacity: 1, offset: 0 }], { duration: 1000 });
+  };
+  // a ring spreading out from a neuron
+  const ripple = (l: number, i: number) => {
+    const ring = node(`${l}-${i}`).cloneNode() as SVGElement;
+    ring.removeAttribute("data-node");
+    ring.setAttribute("class", "ring");
+    net.append(ring);
+    ring.animate([{ transform: "scale(1)", opacity: 0.8 }, { transform: "scale(4)", opacity: 0 }],
+      { duration: 1000, easing: "ease-out" }).finished.then(() => ring.remove());
+  };
+  // a spark flies from the winning neuron up into the blank, which flashes as it lands
+  const send = async (l: number, i: number) => {
+    const from = node(`${l}-${i}`).getBoundingClientRect(), to = doing.getBoundingClientRect();
+    const spark = document.createElement("div");
+    spark.className = "spark";
+    document.body.append(spark);
+    // 6 = half the spark's size, so it's centred on the point
+    const at = (x: number, y: number, scale: number) => `translate(${x - 6}px, ${y - 6}px) scale(${scale})`;
+    await spark.animate([
+      { transform: at(from.x + from.width / 2, from.y + from.height / 2, 1) },
+      { transform: at(to.right, to.y + to.height / 2, 0.5) },
+    ], { duration: 650, easing: "cubic-bezier(0.5, 0, 0.3, 1)" }).finished;
+    spark.remove();
+    doing.animate([{ backgroundColor: `${accent}55`, offset: 0 }], { duration: 700, easing: "ease-out" });
+  };
+  // each output neuron's odds of being the answer, beside it; a winner, when given, comes out on top
+  const probs = [...net.querySelectorAll<SVGTextElement>(".prob")];
+  const setOdds = (winner?: number) => {
+    const w = doings.map(() => Math.random());
+    if (winner !== undefined) w[winner] = Math.max(...w) + 0.5 + Math.random();
+    const sum = w.reduce((a, b) => a + b);
+    probs.forEach((t, k) => {
+      t.textContent = `${Math.round((w[k] / sum) * 100)}%`;
+      t.classList.toggle("win", k === winner);
+    });
+  };
+  const edgeIds = [...net.querySelectorAll<SVGElement>(".pulse")].map((e) => e.dataset.edge!);
+
+  let current = 0;
+  async function run() {
+    for (;;) {
+      await sleep(2500);
+      const winner = (current + 1) % doings.length;
+      current = winner;
+      doing.classList.add("typing");
+      while (doing.textContent) {
+        doing.textContent = doing.textContent.slice(0, -1);
+        await sleep(25);
+      }
+      let lit = sample(layers[0], 2);
+      for (let l = 0; l < last; l++) {
+        lit.forEach((n) => fire(l, n));
+        const next = new Set<number>();
+        for (const n of lit) {
+          for (const m of l + 1 === last ? [winner] : sample(layers[l + 1], 2)) {
+            pulse(`${l}-${n}-${m}`);
+            next.add(m);
+          }
+        }
+        lit = [...next];
+        setOdds(); // the odds flicker while the signal is still on its way
+        await sleep(STEP);
+      }
+      setOdds(winner);
+      await sleep(400);
+      fire(last, winner);
+      ripple(last, winner);
+      await send(last, winner);
+      for (const ch of doings[winner]) {
+        doing.textContent += ch;
+        await sleep(35 + Math.random() * 45);
+      }
+      doing.classList.remove("typing");
+    }
+  }
+  setOdds(0);
+  if (!reduce) {
+    run();
+    setInterval(() => pulse(edgeIds[Math.floor(Math.random() * edgeIds.length)], true), 120);
+  }
+</script>
+
+<style>
+  /* a fixed height, so nothing below moves whatever font or size the greeting is in */
+  h1 { height: 1.35em; }
+  .hello {
+    display: inline-block; /* sits on the heading's baseline when the script shrinks it */
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .hello.out {
+    opacity: 0;
+    transform: translateY(-0.4em);
+  }
+  /* shrinks with the screen so the longest answer stays on one line (down to 1rem on phones);
+     the gap is the usual one below the heading, plus one more line */
+  .name { margin-top: 2.25rem; font-size: clamp(1rem, 2.6vw, 1.3rem); font-weight: bold; }
+  /* Every answer is laid out invisibly in the same spot, so the line is always as tall as the longest
+     one and the network below never jumps. The padding leaves room for the cursor. */
+  .name { display: grid; }
+  .name > span { grid-area: 1 / 1; }
+  .ghost { visibility: hidden; padding-right: 0.6em; }
+  .doing { color: var(--accent); }
+  /* a blinking cursor while the answer is being written */
+  .doing.typing::after {
+    content: "";
+    display: inline-block;
+    width: 0.45em;
+    height: 1em;
+    margin-left: 0.1em;
+    vertical-align: -0.12em;
+    background: currentColor;
+    animation: blink 0.8s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .net { display: block; width: 100%; max-width: 38rem; height: auto; margin: 2rem auto 0; }
+  .prob { font: 13px Georgia, "Noto Serif", serif; fill: var(--ink); opacity: 0.7; font-variant-numeric: tabular-nums; }
+  .prob.win { fill: var(--accent); font-weight: bold; opacity: 1; }
+  .edge { stroke: var(--wash); stroke-width: 1; opacity: 0.6; }
+  /* each edge's pulse is one short dash, parked just off the start; the script slides it along the line */
+  .pulse { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 0.2 1; stroke-dashoffset: 0.2; }
+  .node {
+    fill: var(--paper);
+    stroke: var(--accent);
+    stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* idle neurons glow softly in and out, each on its own beat */
+  @media (prefers-reduced-motion: no-preference) {
+    .node { animation: breathe 3s ease-in-out infinite; }
+  }
+  @keyframes breathe { 50% { opacity: 0.45; } }
+  :global(.spark) { /* added by the script, so outside Astro's scoped styles */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px 3px var(--accent);
+    pointer-events: none;
+  }
+  .ring { fill: none; stroke: var(--accent); stroke-width: 2; transform-box: fill-box; transform-origin: center; }
+
+  /* ---- Intro ---- */
+  .intro { margin-top: 2rem; font-size: 1.1rem; line-height: 1.7; text-wrap: pretty; }
+  /* fades up as it scrolls into view, in browsers with scroll-driven animations */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .intro { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
+    }
+  }
+  @keyframes rise { from { opacity: 0; translate: 0 1rem; } }
+</style>
