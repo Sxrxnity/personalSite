@@ -1,0 +1,73 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MediaGrid, { type Group } from '../components/MediaGrid.astro';
+
+// Things to watch. Each pick: title, a one-line blurb, and its cover in public/media-covers/.
+const groups: Group[] = [
+  {
+    title: "TV Shows", search: "TV series", shape: "poster", items: [
+      { title: "The Rookie", blurb: "On career, relationships, and self-discovery", cover: "the-rookie.jpg" },
+      { title: "South Park", blurb: "On a wide range of social issues", cover: "south-park.jpg" },
+      { title: "The Mentalist", blurb: "On intelligence", cover: "the-mentalist.jpg" },
+      { title: "Suits", blurb: "On career and power", cover: "suits.jpg" },
+      { title: "Friends", blurb: "On relationships and life", cover: "friends.jpg" },
+      { title: "The Big Bang Theory", blurb: "On relationships and self-discovery", cover: "the-big-bang-theory.jpg" },
+      { title: "Haikyuu!!", blurb: "On teamwork and growth", cover: "haikyuu.jpg", search: "Haikyuu anime" },
+    ],
+  },
+  {
+    title: "Movies", search: "film", shape: "poster", items: [
+      { title: "The Godfather", blurb: "On family and power", cover: "the-godfather.jpg" },
+      {
+        title: "The Odyssey", blurb: "On perseverance", cover: "the-odyssey.jpg",
+        search: "The Odyssey 2026 Christopher Nolan film",
+      },
+      { title: "Inception", blurb: "On reality and the power of ideas", cover: "inception.jpg" },
+      { title: "Interstellar", blurb: "On love, time, and sacrifice", cover: "interstellar.jpg" },
+      { title: "The Wolf of Wall Street", blurb: "On greed and excess", cover: "the-wolf-of-wall-street.jpg" },
+      { title: "The Social Network", blurb: "On ambition and friendship", cover: "the-social-network.jpg" },
+      { title: "Dune", blurb: "On power and destiny", cover: "dune.jpg", search: "Dune 2021 Denis Villeneuve film" },
+      { title: "The Shawshank Redemption", blurb: "On hope and freedom", cover: "the-shawshank-redemption.jpg" },
+    ],
+  },
+  {
+    title: "YouTube Channels", search: "YouTube channel", shape: "square", items: [
+      {
+        title: "3Blue1Brown", blurb: "On maths, visualised", cover: "3blue1brown.jpg",
+        href: "https://www.youtube.com/@3blue1brown",
+      },
+      {
+        title: "Fireship", blurb: "On code and the tech industry", cover: "fireship.jpg",
+        href: "https://www.youtube.com/@Fireship",
+      },
+      {
+        title: "ColdFusion", blurb: "On technology and business history", cover: "coldfusion.jpg",
+        href: "https://www.youtube.com/@ColdFusion",
+      },
+      {
+        title: "Crayon Capital", blurb: "On finance and history, explained simply", cover: "crayon-capital.jpg",
+        href: "https://www.youtube.com/@crayon_capital",
+      },
+      {
+        title: "Mark Rober", blurb: "On engineering and science, made fun", cover: "mark-rober.jpg",
+        href: "https://www.youtube.com/@MarkRober",
+      },
+      {
+        title: "Bloomberg Originals", blurb: "On business and the global economy", cover: "bloomberg-originals.jpg",
+        href: "https://www.youtube.com/@business",
+      },
+      { title: "fern", blurb: "On history and society, animated", cover: "fern.jpg", href: "https://www.youtube.com/@fern-tv" },
+    ],
+  },
+];
+---
+<Layout title="Media" hidden back={["/interests/", "Interests"]}>
+  <p class="lede">
+    Media which has made me feel or think in novel ways. Highly recommend.
+  </p>
+  <MediaGrid groups={groups} />
+</Layout>
+
+<style>
+  .lede { line-height: 1.7; text-wrap: pretty; }
+</style>

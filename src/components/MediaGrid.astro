@@ -1,0 +1,93 @@
+---
+// Groups of picks shown as cover tiles, each with its title and blurb laid over the bottom. Clicking one
+// searches Google for the title plus the group's `search` words, so "Suits" under TV Shows looks up
+// "Suits TV series"; a pick's own `search` replaces that when it would be ambiguous, and its `href`
+// skips the search entirely (e.g. straight to a YouTube channel).
+// `shape` is the tile's: tall posters for film and TV, squares for channels and albums.
+
+// cover: a file in public/media-covers/; until there is one, the tile is a plain wash of colour
+export type Item = { title: string; blurb: string; cover?: string; search?: string; href?: string };
+// title: "" for no heading, e.g. when the page's own title already says it
+export type Group = { title: string; search: string; shape: "poster" | "square"; items: Item[] };
+
+const { groups } = Astro.props as { groups: Group[] };
+const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+---
+{groups.map((g) => (
+  <>
+    {g.title && <h2>{g.title}</h2>}
+    {g.items.length ? (
+      <ul class="picks">
+        {g.items.map((item) => (
+          <li>
+            <a class={`tile ${g.shape}`} href={item.href ?? google(item.search ?? `${item.title} ${g.search}`)}
+              target="_blank" rel="noopener noreferrer">
+              {item.cover && <img src={`/media-covers/${item.cover}`} alt="" loading="lazy" />}
+              <span class="caption">
+                <strong>{item.title}</strong>
+                <small>{item.blurb}</small>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : <p class="empty">Coming soon</p>}
+  </>
+))}
+
+<style>
+  h2 { margin: 2rem 0 0.75rem; }
+  h2:first-child { margin-top: 0; }
+  .empty { margin: 0; font-style: italic; opacity: 0.6; }
+
+  .picks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border-radius: 6px;
+    /* stands in until there's a cover */
+    background: linear-gradient(160deg, var(--accent), var(--ink));
+    color: #fff;
+    text-decoration: none;
+  }
+  .tile.poster { aspect-ratio: 2 / 3; }
+  .tile.square { aspect-ratio: 1; }
+  .tile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  .tile:hover img,
+  .tile:focus-visible img { transform: scale(1.05); }
+  /* darkens toward the bottom so the text stays readable over any cover */
+  .caption {
+    position: relative;
+    display: grid;
+    gap: 0.15rem;
+    width: 100%;
+    padding: 2rem 0.5rem 0.5rem;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.85) 45%);
+    line-height: 1.2;
+  }
+  .caption strong { font-size: 0.8rem; }
+  .caption small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3; /* longer blurbs end in "…" rather than outgrowing the tile */
+    overflow: hidden;
+    font-size: 0.65rem;
+    opacity: 0.9;
+  }
+</style>

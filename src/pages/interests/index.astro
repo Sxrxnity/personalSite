@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Bugs from '../../components/Bugs.astro';
 import quotesTxt from "../../data/quotes.txt?raw";
 import { getStandings } from '../../lib/tetrio';
 
@@ -209,6 +210,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       ))
     )}
   </div>
+  <Bugs />
 </Layout>
 
 <script>

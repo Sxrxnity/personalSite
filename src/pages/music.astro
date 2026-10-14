@@ -1,0 +1,12 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MediaGrid, { type Group } from '../components/MediaGrid.astro';
+
+// Music picks: title, a one-line blurb, and its square cover in public/media-covers/.
+const groups: Group[] = [
+  { title: "", search: "music", shape: "square", items: [] },
+];
+---
+<Layout title="Music" hidden back={["/interests/", "Interests"]}>
+  <MediaGrid groups={groups} />
+</Layout>
