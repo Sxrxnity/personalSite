@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Bugs from '../../components/Bugs.astro';
 import quotesTxt from "../../data/quotes.txt?raw";
 import { getStandings } from '../../lib/tetrio';
 
@@ -94,7 +95,8 @@ const rows = [books.slice(0, half), books.slice(half)].map((row) => {
 
 // Tetra League standings: baked in when the site is built, then replaced with live numbers
 // from /api/tetra-standings.json when the page loads (see the script below).
-const standings = await getStandings();
+// Skipped in dev, where frontmatter runs on every request and would stall each reload.
+const standings = import.meta.env.DEV ? null : await getStandings();
 
 // Poker chip riffle: two stacks of five (left red, right cream) that push together, interleave into
 // one alternating stack, then split again. k = height in its own stack, m = height once merged.
@@ -209,6 +211,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       ))
     )}
   </div>
+  <Bugs />
 </Layout>
 
 <script>

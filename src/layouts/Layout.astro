@@ -1,5 +1,6 @@
 ---
-const { title, heading = true } = Astro.props;
+// hidden: kept out of search engines; back: [href, label] for a link back above the page
+const { title, heading = true, hidden = false, back } = Astro.props;
 const path = Astro.url.pathname;
 const tabs = [
   { href: "/", label: "Home" },
@@ -7,7 +8,7 @@ const tabs = [
   { href: "/academics/", label: "Articles" },
   { href: "/contact/", label: "Contact Me", corner: true },
 ];
-const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href));
+const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 ---
 <!doctype html>
 <html lang="en">
@@ -15,6 +16,7 @@ const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href))
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    {hidden && <meta name="robots" content="noindex" />}
   </head>
   <body>
     <header class="topbar">
@@ -25,6 +27,7 @@ const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href))
       </nav>
     </header>
     <main>
+      {back && <a class="back" href={back[0]}>← {back[1]}</a>}
       {heading && <h1>{title}</h1>}
       <slot />
     </main>
@@ -96,7 +99,11 @@ const isActive = (href) => (href === "/" ? path === "/" : path.startsWith(href))
   }
   /* too narrow for a corner: it joins the centred row instead */
   @media (max-width: 40rem) {
-    nav { gap: 1.25rem; }
+    /* one row of smaller tabs; if it still doesn't fit, it scrolls sideways rather than clipping "Home" */
+    nav { gap: 0.7rem; font-size: 0.8rem; overflow-x: auto; justify-content: safe center; }
+    nav a { white-space: nowrap; letter-spacing: 0.02em; }
     nav a.corner { position: static; }
   }
+  .back { display: inline-block; text-decoration: none; letter-spacing: 0.08em; }
+  .back:hover { color: var(--accent); }
 </style>

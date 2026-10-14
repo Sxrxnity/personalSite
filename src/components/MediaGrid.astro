@@ -1,0 +1,185 @@
+---
+// Groups of picks shown as cover tiles, each with its title and (optional) blurb laid over the bottom. Clicking one
+// searches Google for the title plus the group's `search` words, so "Suits" under TV Shows looks up
+// "Suits TV series"; a pick's own `search` replaces that when it would be ambiguous, and its `href`
+// skips the search entirely (e.g. straight to a YouTube channel). A pick with `songs` (a playlist) opens
+// its track list in a pop-up instead, each song a Spotify search for it, plus the playlist's `search` words if it has any. A song given as
+// [original, english] shows as "original (english)" and is searched by the original. `songs` can also be
+// { heading: songs } to split the list, e.g. one heading per movie; with `searchHeadings`, each song is searched
+// with its heading instead of the playlist's `search` words, e.g. the game it's from. `columns: n` lays a long headed
+// list out in n columns across a wider pop-up, so it needs less scrolling; 2 for albums with long song titles.
+// `shape` is the tile's: tall posters for film and TV, squares for channels and albums.
+
+// cover: a file in public/media-covers/; until there is one, the tile is a plain wash of colour
+export type Song = string | [string, string];
+export type Item = {
+  title: string; blurb?: string; cover?: string; search?: string; searchHeadings?: boolean; columns?: number; href?: string;
+  songs?: Song[] | Record<string, Song[]>;
+};
+// title: "" for no heading, e.g. when the page's own title already says it
+export type Group = { title: string; search: string; shape: "poster" | "square"; items: Item[] };
+
+// id: prefix for the pop-ups' ids, so several grids on one page don't clash
+const { groups, id: prefix = "songs" } = Astro.props as { groups: Group[]; id?: string };
+const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+const spotify = (q: string) => `https://open.spotify.com/search/${encodeURIComponent(q)}`;
+---
+{groups.map((g, gi) => (
+  <>
+    {g.title && <h2>{g.title}</h2>}
+    {g.items.length ? (
+      <ul class="picks">
+        {g.items.map((item, i) => {
+          const face = <>
+            {item.cover && <img src={`/media-covers/${item.cover}`} alt="" loading="lazy" />}
+            <span class="caption">
+              <strong>{item.title}</strong>
+              {item.blurb && <small>{item.blurb}</small>}
+            </span>
+          </>;
+          const id = `${prefix}-${gi}-${i}`;
+          return (
+            <li>
+              {item.songs ? <>
+                <button class={`tile ${g.shape}`} commandfor={id} command="show-modal">{face}</button>
+                <dialog id={id} class="songs" aria-label={item.title} closedby="any">
+                  <button class="close" commandfor={id} command="close" aria-label="Close">×</button>
+                  <h3>{item.title}</h3>
+                  {item.blurb && <p>{item.blurb}</p>}
+                  <div class={Array.isArray(item.songs) ? undefined : item.columns ? "headed columns" : "headed"}
+                    style={item.columns && `--columns: ${item.columns}`}>
+                    {(Array.isArray(item.songs) ? [["", item.songs] as const] : Object.entries(item.songs))
+                      // in columns, a very long section is halved under its heading twice, so it can't leave them lopsided
+                      .flatMap(([heading, list]) => item.columns && list.length > 16
+                        ? [[heading, list.slice(0, Math.ceil(list.length / 2))], [heading, list.slice(Math.ceil(list.length / 2))]] as const
+                        : [[heading, list] as const])
+                      .map(([heading, list]) => <div class="group">
+                      {heading && <h4>{heading}</h4>}
+                      <ol>{list.map((s) => {
+                        const [name, english] = typeof s === "string" ? [s] : s;
+                        const query = [name, item.searchHeadings ? heading : item.search].filter(Boolean).join(" ");
+                        const label = <>{name}{english && <> (<em>{english}</em>)</>}</>;
+                        return <li><a href={spotify(query)} target="_blank" rel="noopener noreferrer">{label}</a></li>;
+                      })}</ol>
+                    </div>)}
+                  </div>
+                </dialog>
+              </> : (
+                <a class={`tile ${g.shape}`} href={item.href ?? google(item.search ?? `${item.title} ${g.search}`)}
+                  target="_blank" rel="noopener noreferrer">{face}</a>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    ) : <p class="empty">Coming soon</p>}
+  </>
+))}
+
+<style>
+  h2 { margin: 2rem 0 0.75rem; }
+  h2:first-child { margin-top: 0; }
+  .empty { margin: 0; font-style: italic; opacity: 0.6; }
+
+  .picks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border-radius: 6px;
+    /* stands in until there's a cover */
+    background: linear-gradient(160deg, var(--accent), var(--ink));
+    color: #fff;
+    text-decoration: none;
+  }
+  button.tile { width: 100%; padding: 0; border: 0; font: inherit; text-align: left; cursor: pointer; }
+  .tile.poster { aspect-ratio: 2 / 3; }
+  .tile.square { aspect-ratio: 1; }
+  .tile img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+  }
+  .tile:hover img,
+  .tile:focus-visible img { transform: scale(1.05); }
+  /* darkens toward the bottom so the text stays readable over any cover */
+  .caption {
+    position: relative;
+    display: grid;
+    gap: 0.15rem;
+    width: 100%;
+    padding: 2rem 0.5rem 0.5rem;
+    background: linear-gradient(transparent, rgb(0 0 0 / 0.85) 45%);
+    line-height: 1.2;
+  }
+  .caption strong { font-size: 0.8rem; }
+  .caption small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3; /* longer blurbs end in "…" rather than outgrowing the tile */
+    overflow: hidden;
+    font-size: 0.65rem;
+    opacity: 0.9;
+  }
+
+  /* a playlist's track list, popped up over the page */
+  .songs {
+    /* grows to fit the longest song on one line, until the screen runs out */
+    width: max-content;
+    min-width: min(24rem, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
+    max-height: 80vh;
+    padding: 1.5rem;
+    border: 1px solid var(--wash);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .songs::backdrop { background: rgb(0 0 0 / 0.4); }
+  .songs h3 { margin: 0 2rem 0.25rem 0; }
+  .songs p { margin: 0 0 1rem; font-style: italic; opacity: 0.75; }
+  .songs h3 + div { margin-top: 1rem; } /* no blurb between them */
+  .songs h4 { margin: 1rem 0 0.25rem; font-size: 0.9rem; }
+  /* headings beside their songs, so the many one-song headings (one per movie, composer...) take a line each */
+  @media (min-width: 32rem) {
+    .headed { display: grid; grid-template-columns: fit-content(12rem) 1fr; }
+    .headed .group { display: contents; } /* each heading and its songs share the one grid, so the columns line up */
+    /* tight lines for a heading that wraps, padded down so its first line sits level with the first song */
+    .headed h4 { margin: 0; padding: 0.35em 1.5rem 0.35em 0; line-height: 1.3; }
+    /* a darker line across both columns between sections */
+    .headed .group + .group > * { border-top: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); }
+    /* `columns`: sections flow down and across several columns instead of one long list */
+    .songs:has(.columns) { width: min(64rem, calc(100vw - 2rem)); }
+    .headed.columns { display: block; columns: var(--columns) 15rem; column-gap: 2rem; }
+    .columns .group { display: grid; grid-template-columns: 7rem 1fr; break-inside: avoid; }
+    .columns .group + .group > * { border-top: 0; }
+    /* every section gets the line, so each column starts with one */
+    .columns .group { border-top: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); }
+  }
+  .songs ol { margin: 0; padding: 0; list-style: none; line-height: 1.8; }
+  .songs a { text-decoration: none; }
+  .songs a:hover { color: var(--accent); text-decoration: underline; }
+  .close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .close:hover { color: var(--accent); }
+</style>
