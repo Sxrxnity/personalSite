@@ -6,16 +6,21 @@
 // its track list in a pop-up instead, each song a Spotify search for it, plus the playlist's `search` words if it has any. A song given as
 // [original, english] shows as "original (english)" and is searched by the original. `songs` can also be
 // { heading: songs } to split the list, e.g. one heading per movie; with `searchHeadings`, each song is searched
-// with its heading instead of the playlist's `search` words, e.g. the game it's from.
+// with its heading instead of the playlist's `search` words, e.g. the game it's from. `columns: n` lays a long headed
+// list out in n columns across a wider pop-up, so it needs less scrolling; 2 for albums with long song titles.
 // `shape` is the tile's: tall posters for film and TV, squares for channels and albums.
 
 // cover: a file in public/media-covers/; until there is one, the tile is a plain wash of colour
 export type Song = string | [string, string];
-export type Item = { title: string; blurb?: string; cover?: string; search?: string; searchHeadings?: boolean; href?: string; songs?: Song[] | Record<string, Song[]> };
+export type Item = {
+  title: string; blurb?: string; cover?: string; search?: string; searchHeadings?: boolean; columns?: number; href?: string;
+  songs?: Song[] | Record<string, Song[]>;
+};
 // title: "" for no heading, e.g. when the page's own title already says it
 export type Group = { title: string; search: string; shape: "poster" | "square"; items: Item[] };
 
-const { groups } = Astro.props as { groups: Group[] };
+// id: prefix for the pop-ups' ids, so several grids on one page don't clash
+const { groups, id: prefix = "songs" } = Astro.props as { groups: Group[]; id?: string };
 const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 const spotify = (q: string) => `https://open.spotify.com/search/${encodeURIComponent(q)}`;
 ---
@@ -32,7 +37,7 @@ const spotify = (q: string) => `https://open.spotify.com/search/${encodeURICompo
               {item.blurb && <small>{item.blurb}</small>}
             </span>
           </>;
-          const id = `songs-${gi}-${i}`;
+          const id = `${prefix}-${gi}-${i}`;
           return (
             <li>
               {item.songs ? <>
@@ -41,14 +46,22 @@ const spotify = (q: string) => `https://open.spotify.com/search/${encodeURICompo
                   <button class="close" commandfor={id} command="close" aria-label="Close">×</button>
                   <h3>{item.title}</h3>
                   {item.blurb && <p>{item.blurb}</p>}
-                  <div class={Array.isArray(item.songs) ? undefined : "headed"}>
-                    {(Array.isArray(item.songs) ? [["", item.songs] as const] : Object.entries(item.songs)).map(([heading, list]) => <>
+                  <div class={Array.isArray(item.songs) ? undefined : item.columns ? "headed columns" : "headed"}
+                    style={item.columns && `--columns: ${item.columns}`}>
+                    {(Array.isArray(item.songs) ? [["", item.songs] as const] : Object.entries(item.songs))
+                      // in columns, a very long section is halved under its heading twice, so it can't leave them lopsided
+                      .flatMap(([heading, list]) => item.columns && list.length > 16
+                        ? [[heading, list.slice(0, Math.ceil(list.length / 2))], [heading, list.slice(Math.ceil(list.length / 2))]] as const
+                        : [[heading, list] as const])
+                      .map(([heading, list]) => <div class="group">
                       {heading && <h4>{heading}</h4>}
                       <ol>{list.map((s) => {
                         const [name, english] = typeof s === "string" ? [s] : s;
-                        return <li><a href={spotify([name, item.searchHeadings ? heading : item.search].filter(Boolean).join(" "))} target="_blank" rel="noopener noreferrer">{name}{english && <> (<em>{english}</em>)</>}</a></li>;
+                        const query = [name, item.searchHeadings ? heading : item.search].filter(Boolean).join(" ");
+                        const label = <>{name}{english && <> (<em>{english}</em>)</>}</>;
+                        return <li><a href={spotify(query)} target="_blank" rel="noopener noreferrer">{label}</a></li>;
                       })}</ol>
-                    </>)}
+                    </div>)}
                   </div>
                 </dialog>
               </> : (
@@ -141,9 +154,18 @@ const spotify = (q: string) => `https://open.spotify.com/search/${encodeURICompo
   /* headings beside their songs, so the many one-song headings (one per movie, composer...) take a line each */
   @media (min-width: 32rem) {
     .headed { display: grid; grid-template-columns: fit-content(12rem) 1fr; }
+    .headed .group { display: contents; } /* each heading and its songs share the one grid, so the columns line up */
     /* tight lines for a heading that wraps, padded down so its first line sits level with the first song */
     .headed h4 { margin: 0; padding: 0.35em 1.5rem 0.35em 0; line-height: 1.3; }
-    .headed > :nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); } /* a darker line across both columns between sections */
+    /* a darker line across both columns between sections */
+    .headed .group + .group > * { border-top: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); }
+    /* `columns`: sections flow down and across several columns instead of one long list */
+    .songs:has(.columns) { width: min(64rem, calc(100vw - 2rem)); }
+    .headed.columns { display: block; columns: var(--columns) 15rem; column-gap: 2rem; }
+    .columns .group { display: grid; grid-template-columns: 7rem 1fr; break-inside: avoid; }
+    .columns .group + .group > * { border-top: 0; }
+    /* every section gets the line, so each column starts with one */
+    .columns .group { border-top: 1px solid color-mix(in srgb, var(--ink) 40%, transparent); }
   }
   .songs ol { margin: 0; padding: 0; list-style: none; line-height: 1.8; }
   .songs a { text-decoration: none; }
