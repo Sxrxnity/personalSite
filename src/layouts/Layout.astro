@@ -35,9 +35,9 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
 </html>
 
 <style is:global>
-  /* Ink wash: cream paper, grey ink, pale wash, slate-blue accent */
+  /* Ink wash: white paper, grey ink, pale wash, slate-blue accent */
   :root {
-    --paper: #fffff0;
+    --paper: #ffffff;
     --ink: #4a4a4a;
     --wash: #cbcbcb;
     --accent: #6d8196;
@@ -76,7 +76,6 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     padding: 1rem;
   }
   nav a {
-    color: var(--ink);
     text-decoration: none;
     letter-spacing: 0.08em;
     padding-bottom: 0.25rem;
@@ -84,14 +83,8 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     transition: color 0.2s, border-color 0.2s;
   }
   nav a:hover,
-  nav a:focus-visible {
-    color: var(--ink);
-    border-bottom-color: var(--wash);
-  }
-  nav a[aria-current="page"] {
-    color: var(--ink);
-    border-bottom-color: var(--accent);
-  }
+  nav a:focus-visible { border-bottom-color: var(--wash); }
+  nav a[aria-current="page"] { border-bottom-color: var(--accent); }
   /* pinned to the bar's right corner; the centred tabs stay centred */
   nav a.corner {
     position: absolute;

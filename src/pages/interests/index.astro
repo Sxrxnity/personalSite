@@ -30,7 +30,7 @@ const prose: Record<string, string[]> = {
   poker: [
     "Poker combines mathematical probability with human psychology. In 2025–26 I have mostly played cash games, at blinds ranging from " +
       "5c/10c to $5/$10.",
-    "What fascinates me most is the interplay of GTO (Game Theory Optimal) and exploitative play. GTO is a mathematically " +
+    "What fascinates me most is the synthesis of GTO (Game Theory Optimal) and exploitative play. GTO is a mathematically " +
       "unexploitable strategy; exploitative play targets opponents' tendencies and tells.",
     "At the highest level, poker lets the most rigorous mathematics meet the sharpest reads of human opponents, creating a " +
       "levelling battle of endless intricacy.",
@@ -83,6 +83,8 @@ const books = [
   { slug: "1984", title: "1984", author: "George Orwell", w: 323, h: 500 },
   { slug: "influence-and-persuasion", title: "Influence + Persuasion", author: "Harvard Business Review", w: 292, h: 500 },
 ];
+// clicking a cover searches a bookshop for it, so no per-book links to keep up to date
+const buy = (b: { title: string; author: string }) => `https://www.amazon.com/s?k=${encodeURIComponent(`${b.title} ${b.author}`)}`;
 // Covers are 12rem tall with a 1.75rem gap, drifting at a steady 24px/s.
 const COVER_H = 12, GAP = 1.75, SPEED = 24;
 // Each row is repeated four times and slides by half its length, so one half (two copies) is always
@@ -128,7 +130,9 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
               {rows.map((row) => (
                 <div class="shelf-row" style={`animation-duration: ${row.seconds}s`}>
                   {row.books.map((b) => (
-                    <img class="cover" src={`/covers/${b.slug}.jpg`} alt={`${b.title} by ${b.author}`} width={b.w} height={b.h} />
+                    <a href={buy(b)} target="_blank" rel="noopener" tabindex="-1">
+                      <img class="cover" src={`/covers/${b.slug}.jpg`} alt={`${b.title} by ${b.author}`} width={b.w} height={b.h} />
+                    </a>
                   ))}
                 </div>
               ))}
@@ -186,14 +190,15 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
               </ul>
             </div>
           )}
-          {item.id === "quotes" && <div class="quote-field" aria-hidden="true" data-quotes={JSON.stringify(quotes)}></div>}
           {item.id === "quotes" && (
-            <div class="streak side" data-start={STREAK_START}>
-              <p>{streakBlurb}</p>
-              <p class="streak-day">Day <span class="streak-num">{streakDay(STREAK_START)}</span></p>
-            </div>
+            <>
+              <div class="quote-field" aria-hidden="true" data-quotes={JSON.stringify(quotes)}></div>
+              <div class="streak side" data-start={STREAK_START}>
+                <p>{streakBlurb}</p>
+                <p class="streak-day">Day <span class="streak-num">{streakDay(STREAK_START)}</span></p>
+              </div>
+            </>
           )}
-          <!-- Content for this section goes here -->
         </section>
       ))}
       <!-- Jump menu: skip straight to any interest instead of scrolling through the ones before it -->
@@ -224,14 +229,14 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
-      const { scene, step } = (e.target as HTMLElement).dataset;
-      scenes.forEach((s, j) => s.classList.toggle("active", j === Number(scene)));
+      const scene = Number((e.target as HTMLElement).dataset.scene), step = Number((e.target as HTMLElement).dataset.step);
+      scenes.forEach((s, j) => s.classList.toggle("active", j === scene));
       // the jump menu marks the current interest and takes on its colours
-      jumpLinks.forEach((a, j) => (j === Number(scene) ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
-      const colours = getComputedStyle(scenes[Number(scene)]);
+      jumpLinks.forEach((a, j) => (j === scene ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+      const colours = getComputedStyle(scenes[scene]);
       jump.style.setProperty("--seal", colours.getPropertyValue("--hi"));
       jump.style.setProperty("--seal-bg", colours.getPropertyValue("--bg"));
-      scenes[Number(scene)].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === Number(step)));
+      scenes[scene].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === step));
     }
   }, { rootMargin: "-50% 0px -50% 0px" });
   markers.forEach((m) => io.observe(m));
@@ -412,6 +417,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   }
   /* top row: left → right; bottom row: right → left */
   .shelf-row:first-child { animation-direction: reverse; }
+  .shelf-row:hover { animation-play-state: paused; } /* hold still so a cover can be clicked through to buy */
   @keyframes drift { to { transform: translateX(-50%); } }
   .cover {
     height: 12rem; /* keep in sync with COVER_H */

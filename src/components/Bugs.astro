@@ -16,7 +16,8 @@
   // pointer so it can be caught.
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar-h"));
-  const SIZE = 36, SPEED = 0.08, EDGE = 120; // px, px per ms, px
+  const SIZE = 36, SPEED = 0.08, EDGE = 120, CLEAR = 60; // px, px per ms, px, px kept from the jump menu
+  const avoid = document.querySelector(".jump"); // the Interests page's I–V squares, which a bug mustn't sit on
   document.querySelectorAll<HTMLElement>(".bug").forEach((bug, n) => {
     let x = innerWidth * (n ? 0.2 : 0.8), y = innerHeight * 0.7, heading = Math.random() * 2 * Math.PI, turn = 0;
     let held = false, then = 0;
@@ -33,6 +34,15 @@
         if (x < EDGE || x > innerWidth - EDGE || y < top + EDGE || y > innerHeight - EDGE) {
           const home = Math.atan2(innerHeight / 2 - y, innerWidth / 2 - x);
           heading += Math.sin(home - heading) * 0.04;
+        }
+        if (avoid) {
+          const r = avoid.getBoundingClientRect();
+          const nx = Math.max(r.left, Math.min(x, r.right)), ny = Math.max(r.top, Math.min(y, r.bottom)); // nearest point
+          if (Math.hypot(x - nx, y - ny) < CLEAR + SIZE / 2) {
+            // swing round to face away, at most 0.06 rad a frame: even head-on, the U-turn is only ~45px wide
+            const off = Math.atan2(y - ny, x - nx) - heading;
+            heading += Math.max(-0.06, Math.min(0.06, Math.atan2(Math.sin(off), Math.cos(off))));
+          }
         }
         x += Math.cos(heading) * SPEED * dt;
         y += Math.sin(heading) * SPEED * dt;

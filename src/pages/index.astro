@@ -55,7 +55,8 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   ctx.font = getComputedStyle(hello).font;
   const ascent = (text: string) => ctx.measureText(text).actualBoundingBoxAscent;
   const base = ascent(hellos[0]);
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduce) {
     setInterval(() => {
       hello.classList.add("out");
       setTimeout(() => {
@@ -73,7 +74,6 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   const layers: number[] = JSON.parse(net.dataset.layers!);
   const doings: string[] = JSON.parse(net.dataset.doings!);
   const last = layers.length - 1;
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
   const STEP = 450; // ms for a signal to cross one layer
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -131,8 +131,7 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   async function run() {
     for (;;) {
       await sleep(2500);
-      const winner = (current + 1) % doings.length;
-      current = winner;
+      const winner = current = (current + 1) % doings.length;
       doing.classList.add("typing");
       while (doing.textContent) {
         doing.textContent = doing.textContent.slice(0, -1);
