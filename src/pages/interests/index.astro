@@ -83,6 +83,8 @@ const books = [
   { slug: "1984", title: "1984", author: "George Orwell", w: 323, h: 500 },
   { slug: "influence-and-persuasion", title: "Influence + Persuasion", author: "Harvard Business Review", w: 292, h: 500 },
 ];
+// clicking a cover searches a bookshop for it, so no per-book links to keep up to date
+const buy = (b: { title: string; author: string }) => `https://www.amazon.com/s?k=${encodeURIComponent(`${b.title} ${b.author}`)}`;
 // Covers are 12rem tall with a 1.75rem gap, drifting at a steady 24px/s.
 const COVER_H = 12, GAP = 1.75, SPEED = 24;
 // Each row is repeated four times and slides by half its length, so one half (two copies) is always
@@ -128,7 +130,9 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
               {rows.map((row) => (
                 <div class="shelf-row" style={`animation-duration: ${row.seconds}s`}>
                   {row.books.map((b) => (
-                    <img class="cover" src={`/covers/${b.slug}.jpg`} alt={`${b.title} by ${b.author}`} width={b.w} height={b.h} />
+                    <a href={buy(b)} target="_blank" rel="noopener" tabindex="-1">
+                      <img class="cover" src={`/covers/${b.slug}.jpg`} alt={`${b.title} by ${b.author}`} width={b.w} height={b.h} />
+                    </a>
                   ))}
                 </div>
               ))}
@@ -413,6 +417,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   }
   /* top row: left → right; bottom row: right → left */
   .shelf-row:first-child { animation-direction: reverse; }
+  .shelf-row:hover { animation-play-state: paused; } /* hold still so a cover can be clicked through to buy */
   @keyframes drift { to { transform: translateX(-50%); } }
   .cover {
     height: 12rem; /* keep in sync with COVER_H */
