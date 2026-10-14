@@ -1,0 +1,16 @@
+/* Lora for the Articles page and the articles, a bookish serif; SIL Open Font License (public/fonts/lora-OFL.txt),
+   served from this site */
+@font-face {
+  font-family: "Lora";
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/lora.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Lora";
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/lora-italic.woff2") format("woff2");
+}
+.lora { font-family: "Lora", Georgia, serif; }
