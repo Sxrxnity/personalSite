@@ -9,7 +9,10 @@
     "check": "! grep -rnE '^.{141,}' src astro.config.mjs --exclude=quotes.txt"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.10",
     "@astrojs/vercel": "^11.0.13",
-    "astro": "^7.3.8"
+    "@vercel/analytics": "^2.0.1",
+    "astro": "^7.3.8",
+    "typescript": "^6.0.3"
   }
 }
