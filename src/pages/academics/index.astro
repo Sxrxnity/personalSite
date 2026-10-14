@@ -236,8 +236,8 @@ const articles = [ // in display order
             "All the requirements you want a great timetable to satisfy. Then make a list based on priority.",
           "Starting with the highest priority goal, research at least 3 courses that would allow you to reach that " +
             "goal. For example, if your goal was to obtain a high WAM, you might look for courses (coming from a " +
-            "'maths' kid perspective) that have more lab tests and midterms as opposed to written assignments and " +
-            "portfolios. Use the publicly available course outline finder tool to learn everything you can about " +
+            "'maths' kid perspective) that have more lab tests and midterms as opposed to written and " +
+            "portfolio assignments. Use the publicly available course outline finder tool to learn everything you can about " +
             "your prospective courses.",
           "At the beginning of your university career, finding courses should be fairly easy. Every degree (more or " +
             "less) will have core subjects that you will need to do, so there's not much choice to be had. As you " +
@@ -327,10 +327,10 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
   ],
   [
     { term: "Art", icon: "heart",
-      meaning: "Parity 1. That which is meant to be <b>felt</b> rather than logically understood. Usually not meant " +
+      meaning: "That which is meant to be <b>felt</b> rather than logically understood. Usually not meant " +
         "to be taken literally." },
     { term: "Science", icon: "brain",
-      meaning: "Parity 2. That which is meant to be <b>rationally understood</b> rather than felt. Usually meant to " +
+      meaning: "That which is meant to be <b>rationally understood</b> rather than felt. Usually meant to " +
         "be taken literally." },
   ],
 ];
@@ -521,6 +521,21 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
   .card h2 { margin: 0 0 0.5rem; }
   .card p { margin: 0; font-style: italic; }
 
+  /* Lora for this page and its articles, a bookish serif; SIL Open Font License (public/fonts/lora-OFL.txt), served from this site */
+  @font-face {
+    font-family: "Lora";
+    font-weight: 400 700;
+    font-display: swap;
+    src: url("/fonts/lora.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "Lora";
+    font-style: italic;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url("/fonts/lora-italic.woff2") format("woff2");
+  }
+  .academics { font-family: "Lora", Georgia, serif; }
   .definitions { margin-top: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--wash); }
   .definitions hr {
     border: 0;
