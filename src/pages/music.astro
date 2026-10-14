@@ -1,12 +1,218 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import MediaGrid, { type Group } from '../components/MediaGrid.astro';
+import MediaGrid, { type Group, type Song } from '../components/MediaGrid.astro';
 
-// Music picks: title, a one-line blurb, and its square cover in public/media-covers/.
+// Playlists, one per feeling: title, an optional one-line blurb, the songs in it, and optionally a square cover in
+// public/media-covers/. Clicking one pops its songs up. Order here doesn't matter: albums and their songs are
+// shown alphabetically, songs given as [original, english] by the english, and headed lists by heading.
 const groups: Group[] = [
-  { title: "", search: "music", shape: "square", items: [] },
+  {
+    title: "", search: "music", shape: "square", items: [
+      { title: "Haikyuu OST", search: "ハイキュー", cover: "haikyuu-to-the-top.jpg", songs: {
+        "Season 3": [
+          ["概念の戦い", "Battle of the Concepts"],
+          ["ごあいさつ", "Greetings"],
+          ["月の輪", "The Halo around the Moon"],
+        ],
+        "Season 4": [
+          ["けものたち", "Beasts"],
+          ["視点", "Perspective"],
+          ["合流", "Confluence"],
+          ["変化", "Change"],
+          ["戦線", "Front Line"],
+          ["最強の挑戦者", "The Strongest Challenger"],
+          ["月夕", "Moonlit Evening"],
+          ["ハーケン", "Piton"],
+          ["脅迫(しんらい)", "The Threat of Trust"],
+          ["バケモンたちの宴", "Monsters' Banquet"],
+        ],
+        "The Dumpster Battle (Movie)": [
+          ["ゴミ捨て場の決戦", "The Dumpster Battle"],
+          ["猫の爪", "Cat's Claws"],
+          ["助走距離、確保!!", "Run-Up Distance, Secured!!"],
+          ["ごほうびタイム Type-A", "Reward Time Type-A"],
+          ["おれの勝ち", "I Win"],
+          ["汗", "Sweat"],
+        ],
+      } },
+      { title: "20th Century Classics", cover: "20th-century-classics.jpg", songs: { // cover: "Shure Unidyne 55S" by Adam Lusch, CC BY-SA 2.0, via Wikimedia Commons
+        "ABBA": ["Dancing Queen"],
+        "Eurythmics": ["Sweet Dreams (Are Made of This)"],
+        "Frank Sinatra": ["Fly Me to the Moon", "My Way", "The World We Knew"],
+        "George Michael": ["Careless Whisper"],
+        "Grover Washington Jr. & Bill Withers": ["Just the Two of Us"],
+        "Louis Armstrong": ["What a Wonderful World"],
+        "Modern Talking": ["Brother Louie", "Cheri Cheri Lady"],
+        "Tears for Fears": ["Everybody Wants to Rule the World"],
+      } },
+      { title: "Geometry Dash", cover: "geometry-dash.jpg", songs: { // cover: Geometry Dash app icon
+        "RobTop Levels": ["Deadlocked", "Electroman Adventures", "Geometrical Dominator", "Hexagon Force", "The Seven Seas"],
+        // [song, the extreme demon it's from]
+        "Extreme Demons": [
+          ["At the Speed of Light", "Bloodbath"], ["Dark Dragon Fire", "Avernus"], ["Dark Matter Suite", "Dark Odyssey"],
+          ["Epilogue", "Acu"], ["Flamewall", "Flamewall"], ["Flow", "Nullscapes"], ["Iron God: Sakupen Hell Yes", "Sakupen Hell"],
+          ["Shiawase (VIP)", "Tidal Wave"], ["Sonic Blaster", "Sonic Wave"], ["Stalemate", "GRIEF"], ["Surface", "Artificial Ascent"],
+          ["Thermodynamix", "Acheron"], ["Time Leaper", "Falling Up"],
+        ],
+        "Custom Levels": [
+          "Cherry Blossoms", "Explorers", "Far Fetched - Into the Woods!", "Geometry Dash Gangster Rap", "He's a Pirate",
+          "Lost Memory", "Lunar Abyss", "Milkshake", "Press Start", "Slash Inferno", "Stay Inside Me", "The Maze of Mayonnaise",
+          "What's a Future Funk?",
+        ],
+      } },
+      { title: "Hans Zimmer", search: "Hans Zimmer", cover: "hans-zimmer.jpg", songs: { // cover: "Hans Zimmer in 2022" by Raph_PH, CC BY 2.0, via Wikimedia Commons
+        "F1": ["F1"],
+        "Inception": ["Time"],
+        "Interstellar": ["Cornfield Chase", "Day One", "No Time for Caution", "Stay"],
+        "Kung Fu Panda": ["Oogway Ascends"],
+        "Pirates of the Caribbean": [
+          "Drink Up Me Hearties Yo Ho",
+          "Pirates of the Caribbean Suite: Part 1",
+          "Pirates of the Caribbean Suite: Part 2",
+        ],
+        "The Creator": ["A Place in the Sky", "Missile Launch", "Standby"],
+        "Top Gun: Maverick": ["Main Titles (You've Been Called Back to Top Gun)"],
+      } },
+      { title: "Minecraft OST", search: "Minecraft", cover: "minecraft-ost.jpg", songs: { // cover: Minecraft – Volume Alpha by C418
+        "Volume Alpha": ["Danny", "Haggstrom", "Mice on Venus", "Minecraft", "Moog City", "Subwoofer Lullaby"],
+        "Volume Beta": ["Alpha", "Aria Math", "Concrete Halls", "Haunt Muskie"],
+        "Nether Update": ["Rubedo"],
+        "Caves & Cliffs": ["Comforting Memories", "Left to Bloom", "One More Day", "otherside"],
+        "Trails & Tales": ["Crescent Dunes"],
+        "Tricky Trials": ["Creator", "Deeper", "Featherfall", "Precipice", "Watcher", "yakusoku"],
+        "Minecraft LoFi": ["Laid back lutes for leading the charge", "Soothing synths for mining blocks"],
+      } },
+      { title: "Jake Rivers", search: "Jake Rivers", cover: "jake-rivers.jpg", songs: { // cover: The Ultimate Survival World (Original Game Soundtrack)
+        "The Ultimate Survival World": [
+          "Desert Temple", "Howdy", "Morning in the Savanna", "Opening", "Out of Time", "Story from a Strange Man",
+          "The Final Epilogue", "Willows and Wisps",
+        ],
+      } },
+      { title: "Mario OST", searchHeadings: true, cover: "mario-ost.jpg", songs: { // cover: Super Mario Odyssey box art
+        "Super Mario Odyssey": ["Jump Up, Super Star!", "New Donk City", "New Donk City Café", "Steam Gardens"],
+        "Super Mario Galaxy": ["Comet Observatory", "Gusty Garden Galaxy", "Rosalina in the Observatory"],
+        "Super Mario 3D World": ["A Boss Approaches"],
+        "Super Mario 64": ["Staff Roll"],
+        "New Super Mario Bros. Wii": ["Ghost House", "Staff Roll", "World 1", "World 2"],
+        "Yoshi's Island": ["Flower Garden"],
+      } },
+      { title: "MightyW Project", search: "MightyW Project", cover: "mightyw-project.jpg", songs: { // cover: Steel for the Morning, Flame for the Night
+        "The Hollow Path": ["Ashes of the Wren"],
+        "Songs from the Borderlands": ["Salt in the Wound, Salt in the Sea"],
+        "Steel for the Morning, Flame for the Night": ["By Blade, By Bone", "Crownless", "Knight of the Hollow Star", "The Banner Will Burn"],
+      } },
+      { title: "Alexander Nakarada", search: "Alexander Nakarada", cover: "alexander-nakarada.jpg", songs: { // cover: Fantasy Fair
+        "Fantasy Fair": [
+          "Adventure", "Dungeons and Dragons", "Forest Walk", "Highland Song", "Lullaby", "Mountain Walk",
+          "Now We Ride", "Nowhere Land", "Safe Haven", "Shelter Song", "Tavern Loop One", "Village Ambiance",
+        ],
+        "Maximus Melodius Harmonicus": ["Lively Tavern"],
+        "Nomadic Travels": ["Nomadic Dawn", "Nomadic Sunset"],
+        "Singles": ["Adventure (Remaster)", "Adventure Beyond", "Tavern Loop Three", "The Longest Journey"],
+      } },
+      { title: "Alan Walker", search: "Alan Walker", cover: "alan-walker.jpg", songs: { // cover: Alan Walker logo, public domain, via Wikimedia Commons
+        "Different World": ["Darkside", "Faded", "Lily", "Sing Me to Sleep"],
+        "Walkerworld": ["Hero"],
+        "World of Walker": ["On My Way", "Time (Alan Walker Remix)"],
+        "Singles": ["Alone", "All Falls Down", "End of Time", "Headlights", "The Drum", "Void"],
+      } },
+      { title: "Piano", searchHeadings: true, cover: "piano.jpg", songs: { // cover: piano keys from above, drawn for this page
+        "Beethoven": ["Appassionata: 3. Allegro ma non troppo", "Pathétique Sonata"],
+        "Chopin": ["Nocturne Op. 9 No. 2", "Revolutionary Étude"],
+        "Debussy": ["Clair de Lune"],
+        "Joe Hisaishi": ["Merry-Go-Round of Life"],
+        "Jordan Critz": ["Starry Night"],
+        "Justin Hurwitz": ["Mia & Sebastian's Theme"],
+        "kz (livetune)": ["Renai Circulation"],
+        "Ludovico Einaudi": ["Experience"],
+        "Sheet Music Boss": ["Rush E"],
+        "Tony Ann": ["DISCOVERY", "GRIEF", "ICARUS"],
+        "Yann Tiersen": ["Comptine d'un autre été"],
+      } },
+      { title: "Orchestra", searchHeadings: true, cover: "orchestra.jpg", songs: { // cover: London Symphony Orchestra at the Barbican by FA2010, public domain, via Wikimedia Commons
+        "Brahms": ["Hungarian Dance No. 5"],
+        "Dvořák": ["Symphony No. 9 \"From the New World\""],
+        "Holst": ["Jupiter, the Bringer of Jollity"],
+        "Leontovych": ["Carol of the Bells (Epic Version)"],
+        "Mahler": ["Symphony No. 4"],
+        "Monti": ["Czardas"],
+        "Mozart": ["Lacrimosa (Epic Version)"],
+        "Shostakovich": ["5 Pieces for 2 Violins and Piano", "Waltz No. 2"],
+        "Tchaikovsky": ["Waltz of the Flowers"],
+        "Tony Ann": ["ICARUS (Orchestral Version)"],
+        "Vivaldi": ["Summer", "Winter"],
+      } },
+      { title: "Squid Game OST", search: "Squid Game", cover: "squid-game-ost.jpg", songs: { // cover: Squid Game (Original Soundtrack from the Netflix Series)
+        "Season 1": ["Needles and Dalgona"],
+        "Season 2": ["Way Forward"],
+      } },
+      { title: "The Fiechters", search: "Fiechter", cover: "the-fiechters.jpg", songs: { // cover: Inns & Taverns
+        "Ancient Legends": ["Black Wolf's Inn", "Dwarven Mines", "Imperial Dynasty"],
+        "Camelot": ["Camelot", "Castle Bard", "Timber Town", "Wild Boar's Inn"],
+        "Creatures of Lore": ["Leprechaun's Hut"],
+        "Elven Throne": ["High Elves of Waterfall Sanctuary"],
+        "Elves, Fairies, and Merfolk": ["Secrets of the Deep", "Tree Dwellers"],
+        "Enchanted Lands": ["Excalibur"],
+        "Eyes of the Forest": ["Eyes of the Forest"],
+        "Fairy Lore": ["Moonlit Wings"],
+        "Fantasy Realm": ["Fairy Forest", "Secret of the Elves"],
+        "Forest of Secrets": ["Pixie Wings"],
+        "Inns & Taverns": ["Coral Shell Inn", "Fire Hearth Tavern", "Glowing Ember's Inn", "Ironshield Inn", "Ursa's Inn", "Wise Oak Tavern"],
+        "Inns and Villages": ["Hooded Rogue Inn", "Merchant's Village", "Ninja Star Inn"],
+        "Magical Creatures": ["Atlantis Reborn", "Mermaid Waters"],
+        "Medieval Villages": ["Mirador"],
+        "Medieval World": ["Brown Fox Kingdom"],
+        "Spooky Halloween": ["Eternal Winter"],
+        "The Tea House": ["Moonlit Sky"],
+        "The Wandering Bard": ["The Wandering Bard"],
+        "Waltz of Dreams": ["Autumn Folk"],
+        "Winter Whispers": ["Blue Alpine Village", "Crystal Chimes", "Lost Village of Snow", "Medieval Whispers"],
+        "World of Wonders": ["Cherry Blossoms", "Red Dragon's Inn"],
+      } },
+      { title: "TheFatRat", search: "TheFatRat", cover: "thefatrat.jpg", songs: { // cover: Warrior Songs
+        "Jackpot": ["Epic"],
+        "PARALLAX": ["Fire", "Hiding In The Blue", "Let Love Win"],
+        "Ray Tracer": ["P.S.", "Ray Tracer"],
+        "Warrior Songs": ["Envelope", "Origin", "Origin Reprise", "Threnody", "Warrior Song"],
+        "Singles": [
+          "Close To The Sun", "Escaping Gravity", "Fly Away", "Ghost Light", "HONK", "MAYDAY", "Monody",
+          "Myself & I (Orchestral Version)", "Never Be Alone (Michael Jan Remix)", "No No No", "Out Of The Rain",
+          "Pride & Fear", "Sail Away", "Solitude", "Still Here With You", "The Calling", "Unity", "We'll Meet Again", "Windfall",
+        ],
+      } },
+      { title: "YOASOBI", search: "YOASOBI", cover: "yoasobi.jpg", songs: { // cover: THE BOOK
+        "THE BOOK": [
+          ["あの夢をなぞって", "Tracing That Dream"], ["たぶん", "Probably"], ["ハルカ", "Haruka"], ["ハルジオン", "Halzion"],
+          ["夜に駆ける", "Racing into the Night"],
+        ],
+        "THE BOOK 2": [["ツバメ", "The Swallow"], ["ラブレター", "Love Letter"], ["三原色", "Primary Colours"]],
+        "E-SIDE": ["Comet"],
+        "E-SIDE 2": ["Haruka", "Love Letter", "The Swallow"],
+        "Hajimete no": [["セブンティーン", "Seventeen"]],
+      } },
+      { title: "Two Steps from Hell", search: "Two Steps from Hell", cover: "two-steps-from-hell.jpg", songs: ["Evergreen", "Heart of Courage", "Star Sky", "Victory"] }, // cover: Battlecry
+    ],
+  },
 ];
+const abc = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
+const english = (s: Song) => (typeof s === "string" ? s : s[1]);
+for (const g of groups) {
+  g.items.sort((a, b) => abc(a.title, b.title));
+  for (const item of g.items) {
+    const sortSongs = (songs: Song[]) => songs.sort((a, b) => abc(english(a), english(b)));
+    if (Array.isArray(item.songs)) sortSongs(item.songs);
+    else if (item.songs) item.songs = Object.fromEntries(
+      Object.entries(item.songs).sort(([a], [b]) => abc(a, b)).map(([h, songs]) => [h, sortSongs(songs)]));
+  }
+}
 ---
 <Layout title="Music" hidden back={["/interests/", "Interests"]}>
-  <MediaGrid groups={groups} />
+  <p class="lede">Easter egg! For when you want to explore different feelings.</p>
+  <div class="albums"><MediaGrid groups={groups} /></div>
 </Layout>
+
+<style>
+  .lede { line-height: 1.7; text-wrap: pretty; }
+  /* fixed tiles a quarter bigger than the ~7.2rem ones the shared grid stretches to on a full-width page */
+  .albums :global(.picks) { grid-template-columns: repeat(auto-fill, 9rem); }
+</style>
