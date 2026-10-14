@@ -186,14 +186,15 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
               </ul>
             </div>
           )}
-          {item.id === "quotes" && <div class="quote-field" aria-hidden="true" data-quotes={JSON.stringify(quotes)}></div>}
           {item.id === "quotes" && (
-            <div class="streak side" data-start={STREAK_START}>
-              <p>{streakBlurb}</p>
-              <p class="streak-day">Day <span class="streak-num">{streakDay(STREAK_START)}</span></p>
-            </div>
+            <>
+              <div class="quote-field" aria-hidden="true" data-quotes={JSON.stringify(quotes)}></div>
+              <div class="streak side" data-start={STREAK_START}>
+                <p>{streakBlurb}</p>
+                <p class="streak-day">Day <span class="streak-num">{streakDay(STREAK_START)}</span></p>
+              </div>
+            </>
           )}
-          <!-- Content for this section goes here -->
         </section>
       ))}
       <!-- Jump menu: skip straight to any interest instead of scrolling through the ones before it -->
@@ -224,14 +225,14 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
-      const { scene, step } = (e.target as HTMLElement).dataset;
-      scenes.forEach((s, j) => s.classList.toggle("active", j === Number(scene)));
+      const scene = Number((e.target as HTMLElement).dataset.scene), step = Number((e.target as HTMLElement).dataset.step);
+      scenes.forEach((s, j) => s.classList.toggle("active", j === scene));
       // the jump menu marks the current interest and takes on its colours
-      jumpLinks.forEach((a, j) => (j === Number(scene) ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
-      const colours = getComputedStyle(scenes[Number(scene)]);
+      jumpLinks.forEach((a, j) => (j === scene ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+      const colours = getComputedStyle(scenes[scene]);
       jump.style.setProperty("--seal", colours.getPropertyValue("--hi"));
       jump.style.setProperty("--seal-bg", colours.getPropertyValue("--bg"));
-      scenes[Number(scene)].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === Number(step)));
+      scenes[scene].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === step));
     }
   }, { rootMargin: "-50% 0px -50% 0px" });
   markers.forEach((m) => io.observe(m));

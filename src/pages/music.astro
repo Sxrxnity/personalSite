@@ -699,12 +699,15 @@ const radius = FACE / 2 / Math.tan(Math.PI / groups.length);
     height: calc(var(--face) * 2.4); /* room for the front shelf to sit clear of the fades */
     perspective: 70rem;
     outline-offset: 0.5rem;
+    /* the mask clips to this box, and a shelf rolling past the front swells a little past its width: reach out into the
+       frame's padding so its end albums aren't shaved off, keeping the drum itself the same width */
+    margin-inline: -1.5rem;
     /* the shelves fade as they roll away over the top and bottom */
     mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
   }
   .wheel .drum {
     position: absolute;
-    inset: 0;
+    inset: 0 1.5rem;
     transform-style: preserve-3d;
     transform: translateZ(calc(var(--radius) * -1)) rotateX(calc(var(--at) * 360deg / var(--faces)));
   }
