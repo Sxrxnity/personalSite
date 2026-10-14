@@ -319,7 +319,7 @@ const icons = {
 };
 
 // Each inner list is one category; categories are shown separated by a line.
-const definitions = [
+const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[][] = [
   [
     { term: "First Principles", meaning: "The fundamental nature of how things work." },
     { term: "Physics", meaning: "The 'forces' of the universe which cannot be altered." },
@@ -388,7 +388,8 @@ const definitions = [
                 <h3>{s.numeral}: {s.title}</h3>
                 {s.body.map((p) =>
                   Array.isArray(p) ? <ul class="highlight">{p.map((item) => <li>{item}</li>)}</ul>
-                  : p.box ? <div class="highlight callout">{p.box.map((q) => <p set:html={q} />)}</div>
+                  : typeof p === "string" ? <p set:html={p} />
+                  : "box" in p ? <div class="highlight callout">{p.box.map((q) => <p set:html={q} />)}</div>
                   : p.steps ? <ol class="steps">{p.steps.map((q) => <li set:html={q} />)}</ol>
                   : p.tools ? (
                     <div class="tools">
@@ -403,7 +404,7 @@ const definitions = [
                       ))}
                     </div>
                   )
-                  : <p set:html={p} />)}
+                  : null)}
                 {s.footnotes && <div class="footnotes">{s.footnotes.map((f) => <p>{f}</p>)}</div>}
               </section>
             ))}
