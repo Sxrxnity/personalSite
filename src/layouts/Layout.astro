@@ -1,5 +1,6 @@
 ---
 import Analytics from '@vercel/analytics/astro';
+import SpeedInsights from '@vercel/speed-insights/astro';
 
 // hidden: kept out of search engines; back: [href, label] for a link back above the page
 const { title, heading = true, hidden = false, back } = Astro.props;
@@ -20,6 +21,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     <title>{title}</title>
     {hidden && <meta name="robots" content="noindex" />}
     <Analytics />
+    <SpeedInsights />
   </head>
   <body>
     <header class="topbar">
