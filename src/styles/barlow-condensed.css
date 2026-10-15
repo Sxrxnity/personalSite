@@ -1,0 +1,15 @@
+/* Barlow Condensed, a free stand-in for TETR.IO's display font (HUN). SIL Open Font License
+   (public/fonts/barlow-condensed-OFL.txt); served from
+   this site rather than Google Fonts so it arrives as quickly as the page itself */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Condensed";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
+}

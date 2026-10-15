@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import '../styles/barlow-condensed.css';
 import MediaGrid, { type Group, type Song } from '../components/MediaGrid.astro';
 // the albums, their songs and which shelf each sits on
 import { albums, shelves } from '../data/music';
@@ -23,7 +24,7 @@ for (const g of groups) {
 }
 // the shelves sit around a drum, each face tilted one step from the last and pushed out far enough that they meet edge to
 // edge; FACE is a shelf's height in rem: its heading and row of tiles, centred, with space to spare between shelves
-const FACE = 15;
+const FACE = 14;
 const radius = FACE / 2 / Math.tan(Math.PI / groups.length);
 ---
 <Layout title="Music" hidden back={["/interests/", "Interests"]}>
@@ -151,10 +152,13 @@ const radius = FACE / 2 / Math.tan(Math.PI / groups.length);
 </script>
 
 <style>
+  /* the whole page, top bar aside (it stays Georgia), in Barlow Condensed */
+  :global(main) { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; }
   .lede { line-height: 1.7; text-wrap: pretty; }
   /* each shelf is one row of tiles a quarter bigger than the ~7.2rem ones the shared grid uses */
   .albums :global(.picks) { display: flex; gap: 0.6rem; overflow-x: auto; scrollbar-width: thin; padding-bottom: 0.4rem; }
   .albums :global(.picks > li) { flex: 0 0 9rem; }
+  .albums :global(.caption strong) { font-size: 0.95rem; } /* up from the shared grid's 0.8rem */
   .shelves { display: none; }
 
   .wheel .shelves { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 3rem; } /* clear of the shelf peeking over the top */
