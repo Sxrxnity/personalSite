@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import '../../styles/barlow-condensed.css';
 import Bugs from '../../components/Bugs.astro';
 import quotesTxt from "../../data/quotes.txt?raw";
 import { getStandings } from '../../lib/tetrio';
@@ -498,21 +499,6 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
     100% { transform: translate(calc(var(--side) * var(--gap)), calc(var(--k) * var(--h) * -1)); }
   }
 
-  /* Barlow Condensed, a free stand-in for TETR.IO's display font (HUN). SIL Open Font License
-     (public/fonts/barlow-condensed-OFL.txt); served from
-     this site rather than Google Fonts so it arrives as quickly as the page itself */
-  @font-face {
-    font-family: "Barlow Condensed";
-    font-weight: 500;
-    font-display: swap;
-    src: url("/fonts/barlow-condensed-500.woff2") format("woff2");
-  }
-  @font-face {
-    font-family: "Barlow Condensed";
-    font-weight: 700;
-    font-display: swap;
-    src: url("/fonts/barlow-condensed-700.woff2") format("woff2");
-  }
   /* ---- Tetris standings, styled after TETR.IO's league display ---- */
   .standings {
     font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
