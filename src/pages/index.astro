@@ -25,8 +25,8 @@ const edges = nodes.slice(1).flatMap((to, l) =>
     <span class="hello" aria-hidden="true" data-hellos={JSON.stringify(hellos)}>{hellos[0]}</span>
   </h1>
   <p class="name">
-    {doings.map((d) => <span class="ghost">My name's Danny, and I'm currently {d}.</span>)}
-    <span>My name's Danny, and I'm currently <span class="doing">{doings[0]}</span>.</span>
+    {doings.map((d) => <span class="ghost">My name is Danny, and I'm currently {d}.</span>)}
+    <span>My name is Danny, and I'm currently <span class="doing">{doings[0]}</span>.</span>
   </p>
   <svg class="net" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"
     data-layers={JSON.stringify(layers)} data-doings={JSON.stringify(doings)}>
