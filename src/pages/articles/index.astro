@@ -5,6 +5,8 @@ import '../../styles/lora.css';
 
 // Articles themselves live in src/content/articles/, one .mdx file each (see src/content.config.ts).
 const articles = (await getCollection('articles')).sort((a, b) => a.data.order - b.data.order);
+// grouped by category; categories appear in the order of their first article
+const categories = Object.entries(Object.groupBy(articles, (a) => a.data.category));
 
 // Line icons drawn in the ink colour (24×24 SVG paths).
 const icons = {
@@ -37,11 +39,18 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
 <Layout title="Articles" heading={false}>
   <div class="lora">
     <div class="cards">
-      {articles.map((a) => (
-        <a class="card" href={`/articles/${a.id}/`}>
-          <h2>{a.data.title}</h2>
-          <p set:html={a.data.synopsis} />
-        </a>
+      {categories.map(([category, list]) => (
+        <details open>
+          <summary><h2 class="category">{category}</h2></summary>
+          <div class="list">
+            {list!.map((a) => (
+              <a class="card" href={`/articles/${a.id}/`}>
+                <h3>{a.data.title}</h3>
+                <p set:html={a.data.synopsis} />
+              </a>
+            ))}
+          </div>
+        </details>
       ))}
     </div>
     <section class="definitions">
@@ -82,9 +91,18 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
   /* lines above the article cards and under the definitions, matching the one between them */
   .cards {
     display: grid;
-    gap: 1.25rem;
+    gap: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--wash);
+  }
+  .cards summary { cursor: pointer; color: var(--accent); }
+  .cards .list { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
+  .category {
+    display: inline;
+    margin: 0;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .card {
     display: block;
@@ -98,7 +116,7 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
     border-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 25%, var(--paper));
   }
-  .card h2 { margin: 0 0 0.5rem; }
+  .card h3 { margin: 0 0 0.5rem; font-size: 1.5em; }
   .card p { margin: 0; font-style: italic; }
 
   .definitions { margin-top: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--wash); }
