@@ -1,0 +1,16 @@
+---
+// Jump links to an article's sections (its ## headings). In an article: <Toc headings={props.headings} />
+import type { MarkdownHeading } from 'astro';
+interface Props { headings: MarkdownHeading[] }
+const { headings } = Astro.props;
+---
+<ol class="toc">
+  {headings.filter((h) => h.depth === 2).map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
+</ol>
+
+<style>
+  .toc { list-style: none; padding: 0 0 0 1.5rem; }
+  .toc li { margin: 0.4rem 0; }
+  .toc a:hover,
+  .toc a:focus-visible { color: var(--accent); }
+</style>

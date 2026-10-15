@@ -1,0 +1,50 @@
+---
+// A grid of link cards for apps and sites; icons live in public/tools/.
+interface Props { items: { name: string; href: string; icon: string; blurb: string }[] }
+const { items } = Astro.props;
+---
+<div class="tools">
+  {items.map((t) => (
+    <a class="tool" href={t.href} target="_blank" rel="noopener noreferrer">
+      <img src={`/tools/${t.icon}`} alt="" width="40" height="40" />
+      <span>
+        <strong>{t.name}</strong>
+        <small>{t.blurb}</small>
+      </span>
+    </a>
+  ))}
+</div>
+
+<style>
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+  }
+  .tool {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--wash);
+    text-decoration: none;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .tool:hover,
+  .tool:focus-visible {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 25%, var(--paper));
+  }
+  .tool img {
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    object-fit: contain;
+    border-radius: 6px;
+  }
+  /* the serif's line boxes sit the text a touch low; nudge it to look centred */
+  .tool span { position: relative; top: -0.15rem; }
+  .tool strong { display: block; }
+  .tool small { display: block; margin-top: 0.15rem; font-size: 0.75rem; font-style: italic; line-height: 1.35; }
+</style>

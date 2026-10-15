@@ -1,0 +1,129 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import '../../styles/lora.css';
+
+// Articles themselves live in src/content/articles/, one .mdx file each (see src/content.config.ts).
+const articles = (await getCollection('articles')).sort((a, b) => a.data.order - b.data.order);
+
+// Line icons drawn in the ink colour (24×24 SVG paths).
+const icons = {
+  heart: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z",
+  // Lucide's "brain" (lucide.dev, ISC licence)
+  brain: "M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" +
+    "M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" +
+    "M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4M17.599 6.5a3 3 0 0 0 .399-1.375M6.003 5.125A3 3 0 0 0 6.401 6.5" +
+    "M3.477 10.896a4 4 0 0 1 .585-.396M19.938 10.5a4 4 0 0 1 .585.396M6 18a4 4 0 0 1-1.967-.516M19.967 17.484A4 4 0 0 1 18 18",
+};
+
+// Each inner list is one category; categories are shown separated by a line.
+const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[][] = [
+  [
+    { term: "First Principles", meaning: "The fundamental nature of how things work." },
+    { term: "Physics", meaning: "The 'forces' of the universe which cannot be altered." },
+    { term: "Love", meaning: "What it takes to make it to the top of any field." },
+    { term: "Order of Operations", meaning: "Correctly identifying the flow of logic needed for an event to occur." },
+  ],
+  [
+    { term: "Art", icon: "heart",
+      meaning: "That which is meant to be <b>felt</b> rather than logically understood. Usually not meant " +
+        "to be taken literally." },
+    { term: "Science", icon: "brain",
+      meaning: "That which is meant to be <b>rationally understood</b> rather than felt. Usually meant to " +
+        "be taken literally." },
+  ],
+];
+---
+<Layout title="Articles" heading={false}>
+  <div class="lora">
+    <div class="cards">
+      {articles.map((a) => (
+        <a class="card" href={`/articles/${a.id}/`}>
+          <h2>{a.data.title}</h2>
+          <p set:html={a.data.synopsis} />
+        </a>
+      ))}
+    </div>
+    <section class="definitions">
+      <hr />
+      <h2>Definitions</h2>
+      {definitions.map((group) => (
+        <dl>
+          {group.map((d) => (
+            <>
+              <dt>{d.term}{d.icon && (
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d={icons[d.icon]} /></svg>
+              )}</dt>
+              <dd set:html={d.meaning} />
+            </>
+          ))}
+        </dl>
+      ))}
+      <p class="note">
+        Language is imprecise. For that reason, great communication requires both a great
+        speaker and listener. I can only try my best to be an effective speaker, the rest is up to you.
+      </p>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  // articles used to open on this page at #tutoring, #uni-success, #friends and their sections (#uni-3, …);
+  // send old links on to the article's own page
+  const moved: Record<string, string> = {
+    tutoring: "hsc-and-tutoring", uni: "academic-success-at-university", friends: "making-friends-at-university",
+  };
+  const to = moved[location.hash.slice(1).split("-")[0]];
+  if (to) location.replace(`/articles/${to}/`);
+</script>
+
+<style>
+  /* lines above the article cards and under the definitions, matching the one between them */
+  .cards {
+    display: grid;
+    gap: 1.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--wash);
+  }
+  .card {
+    display: block;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--wash);
+    text-decoration: none;
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .card:hover,
+  .card:focus-visible {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 25%, var(--paper));
+  }
+  .card h2 { margin: 0 0 0.5rem; }
+  .card p { margin: 0; font-style: italic; }
+
+  .definitions { margin-top: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--wash); }
+  .definitions hr {
+    border: 0;
+    border-top: 1px solid var(--wash);
+    margin: 0 0 1.5rem;
+  }
+  .definitions h2 { margin: 0 0 1rem; }
+  .definitions dt { font-weight: bold; }
+  .definitions dd { margin: 0.25rem 0 1rem; }
+  .definitions dl { margin: 0; }
+  .definitions dl + dl {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--wash);
+  }
+  .definitions .note {
+    margin: 2rem 0 0;
+    font-style: italic;
+  }
+  .definitions .icon {
+    width: 1.1em;
+    height: 1.1em;
+    margin-left: 0.35em;
+    vertical-align: -0.15em;
+  }
+</style>

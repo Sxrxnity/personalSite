@@ -1,0 +1,83 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import Toc from '../../components/Toc.astro';
+import Tools from '../../components/Tools.astro';
+import '../../styles/lora.css';
+
+// One page per article in src/content/articles/ (see src/content.config.ts for what each file needs).
+export async function getStaticPaths() {
+  return (await getCollection('articles')).map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const { title, written } = entry.data;
+const { Content, headings } = await render(entry);
+---
+<Layout title={title} heading={false}>
+  <article class="lora">
+    <a class="back" href="/articles/">&larr; Back to Articles</a>
+    <h1>{title}</h1>
+    {written && (
+      <p class="written">
+        Written <time datetime={written}>{new Date(written).toLocaleDateString("en-AU",
+          { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time>
+      </p>
+    )}
+    <div class="body"><Content components={{ Toc, Tools }} headings={headings} /></div>
+  </article>
+</Layout>
+
+<style>
+  /* the article itself is rendered from Markdown, out of reach of scoped styles, hence :global */
+  h1 { font-size: 1.5em; margin: 0.83em 0; }
+  .back {
+    display: inline-block;
+    margin-bottom: 1rem;
+    text-decoration: none;
+  }
+  .back:hover,
+  .back:focus-visible { color: var(--accent); }
+  .written {
+    margin-top: -0.5rem;
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  /* a line above each section separates it from the intro and from the section before */
+  .body :global(h2) {
+    margin: 2rem 0 1em;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--wash);
+    font-size: 1.17em;
+    scroll-margin-top: calc(var(--bar-h) + 1.5rem);
+  }
+  /* and a closing line under the last one */
+  .body:has(h2) {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--wash);
+  }
+
+  /* <div class="highlight"> round a list or paragraphs; add "callout" for paragraphs */
+  .body :global(.highlight) {
+    margin: 1.25rem 0;
+    padding: 1rem 1.5rem 1rem 2.5rem;
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--paper));
+  }
+  .body :global(.highlight > ul) { margin: 0; padding: 0; }
+  .body :global(.highlight li) { margin: 0.3rem 0; }
+  .body :global(.callout) { padding-left: 1.5rem; }
+  .body :global(.callout p) { margin: 0.75rem 0; }
+  .body :global(.callout p:first-child) { margin-top: 0; }
+  .body :global(.callout p:last-child) { margin-bottom: 0; }
+  .body :global(ol:not(.toc) li) { margin: 0.4rem 0; }
+
+  /* <div class="footnotes">: small italic notes at the end of a section */
+  .body :global(.footnotes) {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--wash);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+</style>
