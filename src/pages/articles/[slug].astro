@@ -51,6 +51,13 @@ const { Content, headings } = await render(entry);
     font-size: 1.17em;
     scroll-margin-top: calc(var(--bar-h) + 1.5rem);
   }
+  /* sections wrapped in <details> (see astro.config.mjs) collapse by clicking their heading */
+  .body :global(summary) { list-style: none; cursor: pointer; }
+  .body :global(summary::-webkit-details-marker) { display: none; }
+  .body :global(summary h2::after) { content: " ▾"; color: var(--accent); }
+  .body :global(details:not([open]) summary h2::after) { content: " ▸"; }
+  .body :global(summary:hover h2),
+  .body :global(summary:focus-visible h2) { color: var(--accent); }
   /* and a closing line under the last one */
   .body:has(h2) {
     padding-bottom: 1.5rem;
