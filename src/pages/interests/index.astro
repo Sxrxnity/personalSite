@@ -303,7 +303,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       set("local", `№${s.local}`);
       set("world", `№${s.world}`);
       set("country", s.country);
-      set("when", "live");
+      set("when", `as of ${new Date().toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`);
       box.hidden = false;
     })
     .catch(() => {});
