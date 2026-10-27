@@ -1,5 +1,10 @@
-{[["/media/", "Media", "#4f7fc4"], ["/music/", "Music", "#8a5fbf"]].map(([href, label, wing]) => (
-  <a class="bug" href={href} aria-label={label} style={`--wing: ${wing}`}>
+<!-- Hidden until found: each bug stays out of sight until something on the page releases it (`from`, a selector,
+     on its `on` event): Media flutters off the butterflies on the Power Genes cover, Music out of the ♯ in C♯ minor under Piano -->
+{[
+  ["/media/", "Media", "#4f7fc4", '.cover[src="/covers/power-genes.jpg"]', "pointerenter"],
+  ["/music/", "Music", "#8a5fbf", ".sharp", "click"],
+].map(([href, label, wing, from, on]) => (
+  <a class="bug" href={href} aria-label={label} style={`--wing: ${wing}`} data-from={from} data-on={on} hidden>
     <svg viewBox="0 0 40 40" aria-hidden="true">
       <ellipse class="wing left" cx="12" cy="19" rx="9" ry="5" />
       <ellipse class="wing right" cx="28" cy="19" rx="9" ry="5" />
@@ -11,15 +16,15 @@
 ))}
 
 <script>
-  // Little bugs wander the page in lazy arcs (each one's turn rate drifts slowly at random), turning back
-  // toward the middle whenever they near an edge. Each is a link (to Media, Music), and holds still under the
+  // Once released, little bugs wander the page in lazy arcs (each one's turn rate drifts slowly at random), turning
+  // back toward the middle whenever they near an edge. Each is a link (to Media, Music), and holds still under the
   // pointer so it can be caught.
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bar-h"));
-  const SIZE = 36, SPEED = 0.08, EDGE = 120, CLEAR = 60; // px, px per ms, px, px kept from the jump menu
+  const SIZE = 24, SPEED = 0.08, EDGE = 120, CLEAR = 60; // px, px per ms, px, px kept from the jump menu
   const avoid = document.querySelector(".jump"); // the Interests page's I–V squares, which a bug mustn't sit on
-  document.querySelectorAll<HTMLElement>(".bug").forEach((bug, n) => {
-    let x = innerWidth * (n ? 0.2 : 0.8), y = innerHeight * 0.7, heading = Math.random() * 2 * Math.PI, turn = 0;
+  document.querySelectorAll<HTMLElement>(".bug").forEach((bug) => {
+    let x = 0, y = 0, heading = 0, turn = 0;
     let held = false, then = 0;
     const place = () => bug.style.transform =
       `translate(${x - SIZE / 2}px, ${y - SIZE / 2}px) rotate(${heading + Math.PI / 2}rad)`;
@@ -50,13 +55,25 @@
       }
       requestAnimationFrame(fly);
     };
-    place();
-    if (!reduce) requestAnimationFrame((now) => { then = now; fly(now); });
+    // it emerges from the middle of whatever released it, heading roughly upward, and stays out from then on
+    const release = (e: Event) => {
+      if (!bug.hidden) return;
+      const r = (e.currentTarget as Element).getBoundingClientRect();
+      x = r.left + r.width / 2;
+      y = r.top + r.height / 2;
+      heading = -Math.PI / 2 + (Math.random() - 0.5);
+      bug.hidden = false;
+      place();
+      bug.querySelector("svg")!.animate([{ opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1 }],
+        { duration: 400, easing: "ease-out" });
+      if (!reduce) requestAnimationFrame((now) => { then = now; fly(now); });
+    };
+    document.querySelectorAll(bug.dataset.from!).forEach((el) => el.addEventListener(bug.dataset.on!, release));
   });
 </script>
 
 <style>
-  .bug { position: fixed; top: 0; left: 0; z-index: 5; width: 36px; height: 36px; }
+  .bug { position: fixed; top: 0; left: 0; z-index: 5; width: 24px; height: 24px; } /* keep in sync with SIZE */
   .bug svg { display: block; width: 100%; height: 100%; }
   .bug .body { fill: var(--ink); }
   .bug .feelers { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-linecap: round; }

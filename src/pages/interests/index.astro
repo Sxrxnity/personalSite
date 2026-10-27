@@ -16,8 +16,7 @@ const interests = [
 ];
 const numerals = ["I", "II", "III", "IV", "V"];
 
-// Paragraphs shown one per scroll step on the right of a scene. A scene with N paragraphs gets
-// N screens of scrolling; scenes without any get one.
+// Paragraphs shown together on the right of a scene, fading in one after another when it comes up.
 const prose: Record<string, string[]> = {
   reading: [
     "Here are some of the books in which I have found insight and resonance. What follows are valuable lessons I have drawn from " +
@@ -25,8 +24,8 @@ const prose: Record<string, string[]> = {
     "Reading is an active process: a synthesis of understanding the author's intentions and forming your own.",
     "Reading should begin with a purpose, such as a question. Read only the parts of a book that serve it; good reading is " +
       "therefore non-linear.",
-    "Great readers are great students. They approach books with a humility that lets them grasp exactly what the author means to " +
-      "communicate.",
+    "Great readers are great students. They approach books with humility, emptying their cup of prejudice so the author's " +
+      "meaning can fill it.",
   ],
   poker: [
     "Poker combines mathematical probability with human psychology. In 2025–26 I have mostly played cash games, at blinds ranging from " +
@@ -185,7 +184,9 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
                 {pieces.map((pc) => (
                   <li>
                     <span class="piece-title">{pc.title}</span>
-                    <span class="piece-detail">{pc.detail} · <a href={pc.url} target="_blank" rel="noopener">Barenboim ↗</a></span>
+                    <!-- the ♯ in C♯ minor gets its own span: clicking it releases the Music bug (see Bugs) -->
+                    <span class="piece-detail">{pc.detail.split("♯").flatMap((part, k) => k ? [<span class="sharp">♯</span>, part] : [part])
+                      .concat(" · ")}<a href={pc.url} target="_blank" rel="noopener">Barenboim ↗</a></span>
                   </li>
                 ))}
               </ul>
@@ -209,20 +210,14 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
         ))}
       </nav>
     </div>
-    <!-- One screen-tall scroll marker per scene step; scrolling past them drives the swap.
-         Most scenes have one step; Reading has one per paragraph. -->
-    {interests.flatMap((item, i) =>
-      Array.from({ length: prose[item.id]?.length ?? 1 }, (_, k) => (
-        <div id={k === 0 ? item.id : undefined} class="marker" data-scene={i} data-step={k}></div>
-      ))
-    )}
+    <!-- One screen-tall scroll marker per scene; scrolling past them drives the swap. -->
+    {interests.map((item, i) => <div id={item.id} class="marker" data-scene={i}></div>)}
   </div>
   <Bugs />
 </Layout>
 
 <script>
-  // The marker crossing the middle of the viewport picks the scene shown in the panel,
-  // and which of that scene's paragraphs is showing.
+  // The marker crossing the middle of the viewport picks the scene shown in the panel.
   const markers = [...document.querySelectorAll<HTMLElement>(".marker")];
   const scenes = [...document.querySelectorAll(".scene")];
   const jump = document.querySelector<HTMLElement>(".jump")!;
@@ -231,7 +226,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
-      const scene = Number((e.target as HTMLElement).dataset.scene), step = Number((e.target as HTMLElement).dataset.step);
+      const scene = Number((e.target as HTMLElement).dataset.scene);
       scenes.forEach((s, j) => s.classList.toggle("active", j === scene));
       // the jump menu marks the current interest and takes on its colours
       jumpLinks.forEach((a, j) => (j === scene ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
@@ -244,7 +239,6 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       topbar.style.setProperty("--ink", fg);
       topbar.style.setProperty("--accent", hi);
       topbar.style.setProperty("--wash", `color-mix(in srgb, ${fg} 35%, ${bg})`);
-      scenes[scene].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === step));
     }
   }, { rootMargin: "-50% 0px -50% 0px" });
   markers.forEach((m) => io.observe(m));
@@ -416,7 +410,6 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
     padding: 6vh 0;
     box-sizing: border-box;
     overflow: hidden;
-    opacity: 0.4; /* covers stay legible, heading stays dominant */
   }
   .shelf-row {
     display: flex;
@@ -433,6 +426,15 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
     margin-right: 1.75rem; /* keep in sync with GAP; margin, not gap, so the halves line up at exactly -50% */
     border-radius: 2px 4px 4px 2px;
     box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.5);
+    opacity: 0.4; /* covers stay legible, heading stays dominant */
+    transition: opacity 0.25s, translate 0.25s, scale 0.25s, box-shadow 0.25s;
+  }
+  /* the cover under the pointer comes forward at full strength, so it's clear it can be clicked */
+  .shelf a:hover .cover {
+    opacity: 1;
+    translate: 0 -0.5rem;
+    scale: 1.08;
+    box-shadow: 0 14px 24px -10px rgba(0, 0, 0, 0.6);
   }
 
   /* ---- Right-hand content beside the heading, mirroring the heading's offset ---- */
@@ -444,25 +446,42 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
     width: min(54rem, 100vw - 24rem); /* leave room for the heading on the left */
   }
 
-  /* ---- Reading text: one paragraph at a time ---- */
-  .prose {
-    display: grid; /* every paragraph shares one cell, so they cross-fade in place */
-    font-size: 1.15rem;
-    line-height: 1.6;
+  /* ---- Reading and Poker text: all the paragraphs in one block, fading in one after another ---- */
+  /* the column runs from beside the heading to the right-hand edge, as for the other sides; the block hugs its
+     text and sits centred in it */
+  .scene > .prose {
+    left: calc(100% - max(-15vw, calc(1rem + (100% - 100vw) / 2)) - min(54rem, 100vw - 24rem));
+    width: fit-content;
+    max-width: 44rem;
+    margin-inline: auto;
   }
-  .prose p {
-    grid-area: 1 / 1;
-    align-self: center;
-    margin: 0;
+  .prose {
+    box-sizing: border-box;
     padding: 1rem 1.4rem;
     border-radius: 4px;
     /* soft backing so the drifting covers never compete with the text */
     background: color-mix(in srgb, var(--bg) 90%, transparent);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .prose p {
+    margin: 0;
+    text-wrap: pretty; /* lines fill evenly to one right edge, without a lone word left on the last */
     opacity: 0;
     transform: translateY(1rem);
     transition: opacity 0.6s, transform 0.6s;
   }
-  .prose p.current { opacity: 1; transform: none; }
+  .prose p + p { margin-top: 0.55em; }
+  /* Reading's paragraphs are short: a narrower column wraps every one of them, and each is split into even
+     halves, rather than one running on as a single long line or a long line then a short one */
+  .shelf ~ .prose p { max-width: 37rem; text-wrap: balance; }
+  /* beside the heading, the block sits a little right of centre */
+  @media not (max-width: 64rem) { .scene > .shelf ~ .prose { margin-inline: auto 3rem; } }
+  .scene.active .prose p { opacity: 1; transform: none; }
+  .scene.active .prose p:nth-child(2) { transition-delay: 0.25s; }
+  .scene.active .prose p:nth-child(3) { transition-delay: 0.5s; }
+  .scene.active .prose p:nth-child(4) { transition-delay: 0.75s; }
+  .scene.active .prose p:nth-child(5) { transition-delay: 1s; }
   /* ---- Poker: chip riffle shuffle ---- */
   /* sits under the heading on the left, lined up with it */
   .chips-wrap {
@@ -593,12 +612,13 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       margin-top: 1rem;
       margin-inline: max(-15vw, calc(1rem + (100% - 100vw) / 2));
     }
+    .scene > .prose { left: auto; width: auto; max-width: none; }
     .standings { text-align: left; }
     .chips-wrap { display: none; } /* no room once the text sits under the heading */
   }
   @media (max-width: 40rem) {
-    .prose { font-size: 0.95rem; line-height: 1.5; }
-    .prose p { padding: 0.7rem 0.9rem; }
+    .prose { font-size: 0.9rem; }
+    .prose { padding: 0.7rem 0.9rem; }
     /* smaller covers leave room between the two rows for the heading and text */
     .cover { height: 7rem; }
     .shelf { padding: 2vh 0; }
