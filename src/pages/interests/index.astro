@@ -227,6 +227,7 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   const scenes = [...document.querySelectorAll(".scene")];
   const jump = document.querySelector<HTMLElement>(".jump")!;
   const jumpLinks = [...jump.querySelectorAll("a")];
+  const topbar = document.querySelector<HTMLElement>(".topbar")!;
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
@@ -237,6 +238,12 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
       const colours = getComputedStyle(scenes[scene]);
       jump.style.setProperty("--seal", colours.getPropertyValue("--hi"));
       jump.style.setProperty("--seal-bg", colours.getPropertyValue("--bg"));
+      // so does the top bar, so it reads as part of the scene in either theme
+      const [bg, fg, hi] = ["--bg", "--fg", "--hi"].map((v) => colours.getPropertyValue(v));
+      topbar.style.setProperty("--paper", bg);
+      topbar.style.setProperty("--ink", fg);
+      topbar.style.setProperty("--accent", hi);
+      topbar.style.setProperty("--wash", `color-mix(in srgb, ${fg} 35%, ${bg})`);
       scenes[scene].querySelectorAll(".prose p").forEach((p, k) => p.classList.toggle("current", k === step));
     }
   }, { rootMargin: "-50% 0px -50% 0px" });

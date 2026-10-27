@@ -1,9 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import '../styles/barlow-condensed.css';
 
-// "Hi!" cycles through these; the first is what shows before the script runs.
-const hellos = ["Hi!", "Hola!", "Bonjour!", "Ciao!", "Hallo!", "Olá!", "Hej!", "Привет!", "Γεια σου!",
-  "नमस्ते!", "こんにちは!", "你好!", "안녕하세요!", "Xin chào!", "Merhaba!"];
+// "Hi!" cycles through these, by language code; the first is what shows before the script runs.
+// Visitors whose browser is set to one of these languages are greeted in it first.
+const greetings = { en: "Hi!", es: "Hola!", fr: "Bonjour!", it: "Ciao!", de: "Hallo!", pt: "Olá!", sv: "Hej!",
+  ru: "Привет!", el: "Γεια σου!", hi: "नमस्ते!", ja: "こんにちは!", zh: "你好!", ko: "안녕하세요!", vi: "Xin chào!",
+  tr: "Merhaba!" };
+const hellos = Object.values(greetings);
 
 // Fill the blank in "I'm currently ___", one per pass of the network; the first shows on load.
 // Each has its own output neuron.
@@ -22,7 +26,8 @@ const edges = nodes.slice(1).flatMap((to, l) =>
 ---
 <Layout title="Home" heading={false}>
   <h1 aria-label="Hi!">
-    <span class="hello" aria-hidden="true" data-hellos={JSON.stringify(hellos)}>{hellos[0]}</span>
+    <span class="hello" aria-hidden="true" data-hellos={JSON.stringify(hellos)}
+      data-langs={JSON.stringify(Object.keys(greetings))}>{hellos[0]}</span>
   </h1>
   <p class="name">
     {doings.map((d) => <span class="ghost">My name is Danny, and I'm currently {d}.</span>)}
@@ -38,34 +43,40 @@ const edges = nodes.slice(1).flatMap((to, l) =>
     {nodes.at(-1)!.map((n) => <text class="prob" x={n.x + 14} y={n.y} dominant-baseline="central" />)}
   </svg>
   <p class="intro">
-    I am currently a 2nd year student studying Advanced Computer Science at UNSW. Rather than me telling you who
-    I am, I think you'll get to know me much better by just looking around this site! If there's any discipline
-    that you wish to discuss in greater depth, or improvements you think the site could use, please{" "}
-    <a href="/contact/">get in touch</a>!
+    I'm a 2nd year Advanced Computer Science student at UNSW. Rather than telling you who I am, I'll let this site
+    show you, so have a look around! If there's anything you'd like to discuss further, or ideas to improve the site,
+    please <a href="/contact/">get in touch</a>!
   </p>
 </Layout>
 
 <script>
   const hello = document.querySelector<HTMLElement>(".hello")!;
   const hellos: string[] = JSON.parse(hello.dataset.hellos!);
-  let i = 0;
+  // start on the first of the visitor's languages that has a greeting ("en-AU" counts as "en"), else "Hi!"
+  const langs: string[] = JSON.parse(hello.dataset.langs!);
+  let i = Math.max(0, langs.indexOf(navigator.languages.map((l) => l.split("-")[0]).find((l) => langs.includes(l)) ?? ""));
+  hello.textContent = hellos[i];
   // Other scripts come from fallback fonts that draw taller (Hindi, Chinese, Korean...), so scale each
   // greeting until it stands as tall above the baseline as "Hi!".
   const ctx = document.createElement("canvas").getContext("2d")!;
-  ctx.font = getComputedStyle(hello).font;
   const ascent = (text: string) => ctx.measureText(text).actualBoundingBoxAscent;
-  const base = ascent(hellos[0]);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!reduce) {
+  // measured once Barlow Condensed has loaded, or "Hi!" would be sized in the fallback font
+  document.fonts.ready.then(() => {
+    ctx.font = getComputedStyle(hello).font;
+    const base = ascent(hellos[0]);
+    const fit = () => (hello.style.fontSize = `${base / ascent(hello.textContent!)}em`);
+    fit();
+    if (reduce) return;
     setInterval(() => {
       hello.classList.add("out");
       setTimeout(() => {
         hello.textContent = hellos[++i % hellos.length];
-        hello.style.fontSize = `${base / ascent(hello.textContent)}em`;
+        fit();
         hello.classList.remove("out");
       }, 300); // matches the transition below
     }, 2000);
-  }
+  });
 
   // Each pass: a signal runs forward through the network, one output neuron wins,
   // and its answer streams into the blank a letter at a time.
@@ -74,21 +85,22 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   const layers: number[] = JSON.parse(net.dataset.layers!);
   const doings: string[] = JSON.parse(net.dataset.doings!);
   const last = layers.length - 1;
-  const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  // read each time it's used, so the network follows the light/dark toggle
+  const accent = () => getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
   const STEP = 450; // ms for a signal to cross one layer
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const sample = (n: number, k: number) => [...Array(n).keys()].sort(() => Math.random() - 0.5).slice(0, k);
   const $ = (selector: string) => net.querySelector<SVGElement>(selector)!;
   const node = (id: string) => $(`.node[data-node="${id}"]`) as SVGCircleElement;
   const fire = (l: number, i: number) => node(`${l}-${i}`).animate(
-    [{ fill: accent, transform: "scale(1.6)", opacity: 1, offset: 0 }], { duration: 1200, easing: "ease-out" });
+    [{ fill: accent(), transform: "scale(1.6)", opacity: 1, offset: 0 }], { duration: 1200, easing: "ease-out" });
   // a dash of light along an edge (see .pulse); a real signal also leaves the edge glowing for a moment,
   // while faint ones are just background chatter
   const pulse = (id: string, faint = false) => {
-    const opacity = faint ? 0.3 : 1;
+    const opacity = faint ? 0.5 : 1;
     $(`.pulse[data-edge="${id}"]`).animate([{ strokeDashoffset: 0.2, opacity }, { strokeDashoffset: -1, opacity }],
       faint ? { duration: 1100 } : { duration: STEP, easing: "ease-in" });
-    if (!faint) $(`.edge[data-edge="${id}"]`).animate([{ stroke: accent, opacity: 1, offset: 0 }], { duration: 1000 });
+    if (!faint) $(`.edge[data-edge="${id}"]`).animate([{ stroke: accent(), opacity: 1, offset: 0 }], { duration: 1000 });
   };
   // a ring spreading out from a neuron
   const ripple = (l: number, i: number) => {
@@ -112,7 +124,8 @@ const edges = nodes.slice(1).flatMap((to, l) =>
       { transform: at(to.right, to.y + to.height / 2, 0.5) },
     ], { duration: 650, easing: "cubic-bezier(0.5, 0, 0.3, 1)" }).finished;
     spark.remove();
-    doing.animate([{ backgroundColor: `${accent}55`, offset: 0 }], { duration: 700, easing: "ease-out" });
+    doing.animate([{ backgroundColor: `color-mix(in srgb, ${accent()} 33%, transparent)`, offset: 0 }],
+      { duration: 700, easing: "ease-out" });
   };
   // each output neuron's odds of being the answer, beside it; a winner, when given, comes out on top
   const probs = [...net.querySelectorAll<SVGTextElement>(".prob")];
@@ -127,22 +140,58 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   };
   const edgeIds = [...net.querySelectorAll<SVGElement>(".pulse")].map((e) => e.dataset.edge!);
 
+  // Every neuron drifts slowly around its place, each on its own loop, and its edges and odds go with it.
+  const DRIFT = 2.4; // furthest a neuron strays, in viewBox units (they're 36 apart)
+  const drifters = [...net.querySelectorAll<SVGCircleElement>(".node")].map((el) => ({
+    el, x: el.cx.baseVal.value, y: el.cy.baseVal.value,
+    // a random speed (one loop every 4-9s) and starting point for each direction
+    fx: (2 * Math.PI) / (4000 + Math.random() * 5000), fy: (2 * Math.PI) / (4000 + Math.random() * 5000),
+    px: Math.random() * 2 * Math.PI, py: Math.random() * 2 * Math.PI, at: { x: 0, y: 0 },
+  }));
+  const byId = new Map(drifters.map((d) => [d.el.dataset.node!, d]));
+  const lines = [...net.querySelectorAll<SVGLineElement>("line")].map((el) => {
+    const [l, i, j] = el.dataset.edge!.split("-").map(Number);
+    return { el, a: byId.get(`${l}-${i}`)!.at, b: byId.get(`${l + 1}-${j}`)!.at };
+  });
+  const labels = probs.map((t, k) => ({ t, at: byId.get(`${last}-${k}`)!.at }));
+  const float = () => requestAnimationFrame(function frame(now) {
+    for (const d of drifters) {
+      d.at.x = d.x + DRIFT * Math.sin(now * d.fx + d.px);
+      d.at.y = d.y + DRIFT * Math.sin(now * d.fy + d.py);
+      d.el.setAttribute("cx", d.at.x.toFixed(2));
+      d.el.setAttribute("cy", d.at.y.toFixed(2));
+    }
+    for (const { el, a, b } of lines) {
+      el.setAttribute("x1", a.x.toFixed(2));
+      el.setAttribute("y1", a.y.toFixed(2));
+      el.setAttribute("x2", b.x.toFixed(2));
+      el.setAttribute("y2", b.y.toFixed(2));
+    }
+    for (const { t, at } of labels) {
+      t.setAttribute("x", (at.x + 14).toFixed(2)); // 14 = the gap the page lays out between neuron and odds
+      t.setAttribute("y", at.y.toFixed(2));
+    }
+    requestAnimationFrame(frame);
+  });
+
   let current = 0;
   async function run() {
     for (;;) {
-      await sleep(2500);
+      await sleep(1200);
       const winner = current = (current + 1) % doings.length;
       doing.classList.add("typing");
       while (doing.textContent) {
         doing.textContent = doing.textContent.slice(0, -1);
         await sleep(25);
       }
-      let lit = sample(layers[0], 2);
+      // each pass takes its own route: 1-3 neurons start it, and each one passes it on to 1-3 more
+      const some = (n: number) => sample(n, 1 + Math.floor(Math.random() * 3));
+      let lit = some(layers[0]);
       for (let l = 0; l < last; l++) {
         lit.forEach((n) => fire(l, n));
         const next = new Set<number>();
         for (const n of lit) {
-          for (const m of l + 1 === last ? [winner] : sample(layers[l + 1], 2)) {
+          for (const m of l + 1 === last ? [winner] : some(layers[l + 1])) {
             pulse(`${l}-${n}-${m}`);
             next.add(m);
           }
@@ -166,13 +215,19 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   setOdds(0);
   if (!reduce) {
     run();
-    setInterval(() => pulse(edgeIds[Math.floor(Math.random() * edgeIds.length)], true), 120);
+    setInterval(() => pulse(edgeIds[Math.floor(Math.random() * edgeIds.length)], true), 70);
+    float();
   }
 </script>
 
 <style>
-  /* a fixed height, so nothing below moves whatever font or size the greeting is in */
-  h1 { height: 1.35em; }
+  /* a big condensed greeting; a fixed height, so nothing below moves whatever font or size the greeting is in */
+  h1 {
+    height: 1.15em;
+    margin: 0;
+    font: 700 clamp(4rem, 13vw, 7rem) / 1.15 "Barlow Condensed", "Arial Narrow", sans-serif;
+    white-space: nowrap;
+  }
   .hello {
     display: inline-block; /* sits on the heading's baseline when the script shrinks it */
     transition: opacity 0.3s, transform 0.3s;
@@ -183,7 +238,7 @@ const edges = nodes.slice(1).flatMap((to, l) =>
   }
   /* shrinks with the screen so the longest answer stays on one line (down to 1rem on phones);
      the gap is the usual one below the heading, plus one more line */
-  .name { margin-top: 2.25rem; font-size: clamp(1rem, 2.6vw, 1.3rem); font-weight: bold; }
+  .name { margin-top: 1.25rem; font-size: clamp(1rem, 2.6vw, 1.3rem); font-weight: bold; }
   /* Every answer is laid out invisibly in the same spot, so the line is always as tall as the longest
      one and the network below never jumps. The padding leaves room for the cursor. */
   .name { display: grid; }

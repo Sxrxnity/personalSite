@@ -20,12 +20,17 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {hidden && <meta name="robots" content="noindex" />}
+    <!-- before anything paints, so a saved dark/light choice never flashes the other theme first -->
+    <script is:inline>
+      try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+    </script>
     <Analytics />
     <SpeedInsights />
   </head>
   <body>
     <header class="topbar">
       <nav>
+        <button class="theme" type="button" aria-label="Dark mode" title="Dark mode"></button>
         {tabs.map((t) => (
           <a href={t.href} class:list={{ corner: t.corner }} aria-current={isActive(t.href) ? "page" : undefined}>{t.label}</a>
         ))}
@@ -39,6 +44,21 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
   </body>
 </html>
 
+<script>
+  // Flip between light and dark, starting from whichever is showing (the saved choice, or the system's).
+  const button = document.querySelector<HTMLButtonElement>(".theme")!;
+  const root = document.documentElement;
+  const isDark = () => getComputedStyle(root).colorScheme === "dark";
+  const show = () => button.setAttribute("aria-pressed", String(isDark()));
+  button.addEventListener("click", () => {
+    root.dataset.theme = isDark() ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch {}
+    show();
+  });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", show);
+  show();
+</script>
+
 <style is:global>
   /* Ink wash: white paper, grey ink, pale wash, slate-blue accent */
   :root {
@@ -47,12 +67,20 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     --wash: #cbcbcb;
     --accent: #6d8196;
     --bar-h: 62px; /* top bar height, border included; pages pin content under it */
+    color-scheme: light;
   }
+  /* Night ink: the same wash inverted, with the accent lifted so it still reads on the dark paper.
+     Follows the system unless the toggle in the top bar has picked a side (data-theme on <html>). */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #17191c; --ink: #d2d2d2; --wash: #4b4f55; --accent: #93a8bf; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --paper: #17191c; --ink: #d2d2d2; --wash: #4b4f55; --accent: #93a8bf; color-scheme: dark; }
   body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
     font-family: Georgia, "Noto Serif", serif;
+    transition: background-color 0.3s, color 0.3s;
   }
   main {
     padding: 2rem 1rem;
@@ -73,6 +101,7 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     /* brush-stroke bottom edge: ink fading out at both ends */
     border-bottom: 2px solid;
     border-image: linear-gradient(90deg, transparent, var(--wash) 15%, var(--ink) 50%, var(--wash) 85%, transparent) 1;
+    transition: background-color 0.4s; /* pages may recolour it, e.g. Interests, to match each scene */
   }
   nav {
     display: flex;
@@ -101,7 +130,31 @@ const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWit
     nav { gap: 0.7rem; font-size: 0.8rem; overflow-x: auto; justify-content: safe center; }
     nav a { white-space: nowrap; letter-spacing: 0.02em; }
     nav a.corner { position: static; }
+    .theme { position: static; flex: none; }
   }
+  /* light/dark toggle, pinned to the bar's left corner: a moon by day, a sun by night */
+  .theme {
+    position: absolute;
+    left: 1.5rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+    /* a moon: a disc with a bite taken out by an inset shadow */
+    box-shadow: inset 0.45rem -0.3rem 0 0 currentColor;
+    transform: rotate(-20deg) scale(0.8);
+    transition: box-shadow 0.4s, transform 0.4s, background-color 0.4s;
+  }
+  .theme[aria-pressed="true"] {
+    background: currentColor;
+    box-shadow: inset 0 0 0 0 currentColor, 0 0 0 0.25rem var(--paper), 0 0 0 0.35rem var(--wash);
+    transform: rotate(0) scale(0.55);
+  }
+  .theme:hover, .theme:focus-visible { color: var(--accent); }
   .back { display: inline-block; text-decoration: none; letter-spacing: 0.08em; }
   .back:hover { color: var(--accent); }
 </style>
