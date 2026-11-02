@@ -41,7 +41,8 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
     <div class="cards">
       {categories.map(([category, list]) => (
         <details open>
-          <summary><h2 class="category">{category}</h2></summary>
+          <summary><h2 class="category">{category}</h2>
+            <span class="count">{list!.length} article{list!.length === 1 ? '' : 's'}</span></summary>
           <div class="list">
             {list!.map((a) => (
               <a class="card" href={`/articles/${a.id}/`}>
@@ -55,24 +56,27 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
     </div>
     <section class="definitions">
       <hr />
-      <h2>Definitions</h2>
-      {definitions.map((group) => (
-        <dl>
-          {group.map((d) => (
-            <>
-              <dt>{d.term}{d.icon && (
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
-                  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d={icons[d.icon]} /></svg>
-              )}</dt>
-              <dd set:html={d.meaning} />
-            </>
-          ))}
-        </dl>
-      ))}
-      <p class="note">
-        Language is imprecise. For that reason, great communication requires both a great
-        speaker and listener. I can only try my best to be an effective speaker, the rest is up to you.
-      </p>
+      <details open>
+        <summary><h2 class="category">Definitions</h2>
+          <span class="count">{definitions.flat().length} terms</span></summary>
+        {definitions.map((group) => (
+          <dl>
+            {group.map((d) => (
+              <>
+                <dt>{d.term}{d.icon && (
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+                    stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d={icons[d.icon]} /></svg>
+                )}</dt>
+                <dd set:html={d.meaning} />
+              </>
+            ))}
+          </dl>
+        ))}
+        <p class="note">
+          Language is imprecise. For that reason, great communication requires both a great
+          speaker and listener. I can only try my best to be an effective speaker, the rest is up to you.
+        </p>
+      </details>
     </section>
   </div>
 </Layout>
@@ -95,8 +99,11 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
     padding-top: 1.5rem;
     border-top: 1px solid var(--wash);
   }
-  .cards summary { cursor: pointer; color: var(--accent); }
+  summary { cursor: pointer; color: var(--accent); }
   .cards .list { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
+  /* shown only while collapsed, so a closed section doesn't look empty */
+  .count { margin-left: 0.5em; font-style: italic; color: var(--ink); opacity: 0.6; }
+  details[open] .count { display: none; }
   .category {
     display: inline;
     margin: 0;
@@ -125,7 +132,7 @@ const definitions: { term: string; meaning: string; icon?: keyof typeof icons }[
     border-top: 1px solid var(--wash);
     margin: 0 0 1.5rem;
   }
-  .definitions h2 { margin: 0 0 1rem; }
+  .definitions summary { margin-bottom: 1rem; }
   .definitions dt { font-weight: bold; }
   .definitions dd { margin: 0.25rem 0 1rem; }
   .definitions dl { margin: 0; }
