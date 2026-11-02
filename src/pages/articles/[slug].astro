@@ -3,6 +3,7 @@ import { getCollection, render } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import Toc from '../../components/Toc.astro';
 import Tools from '../../components/Tools.astro';
+import Term from '../../components/Term.astro';
 import '../../styles/lora.css';
 
 // One page per article in src/content/articles/ (see src/content.config.ts for what each file needs).
@@ -23,7 +24,7 @@ const { Content, headings } = await render(entry);
           { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</time>
       </p>
     )}
-    <div class="body"><Content components={{ Toc, Tools }} headings={headings} /></div>
+    <div class="body"><Content components={{ Toc, Tools, strong: Term }} headings={headings} /></div>
   </article>
 </Layout>
 
@@ -56,6 +57,9 @@ const { Content, headings } = await render(entry);
   .body :global(summary::-webkit-details-marker) { display: none; }
   .body :global(summary h2::after) { content: " ▾"; color: var(--accent); }
   .body :global(details:not([open]) summary h2::after) { content: " ▸"; }
+  /* a closed section's contents are walled off, so its heading's bottom margin no longer merges with the next
+     heading's top margin; drop it so collapsed sections sit as far apart as open ones */
+  .body :global(details:not([open]) summary h2) { margin-bottom: 0; }
   .body :global(summary:hover h2),
   .body :global(summary:focus-visible h2) { color: var(--accent); }
   /* and a closing line under the last one */
