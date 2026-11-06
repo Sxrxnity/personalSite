@@ -421,7 +421,9 @@ const builtOn = new Date().toLocaleDateString("en-AU", { day: "numeric", month: 
   .shelf-row:hover { animation-play-state: paused; } /* hold still so a cover can be clicked through to buy */
   @keyframes drift { to { transform: translateX(-50%); } }
   .cover {
-    height: 12rem; /* keep in sync with COVER_H */
+    /* shrinks on short screens so the two rows don't overlap the text; the max stays in sync with COVER_H
+       (drift is timed from it, so smaller covers drift slightly slower) */
+    height: clamp(6rem, 20svh, 12rem);
     width: auto;
     margin-right: 1.75rem; /* keep in sync with GAP; margin, not gap, so the halves line up at exactly -50% */
     border-radius: 2px 4px 4px 2px;
